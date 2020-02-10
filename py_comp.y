@@ -12,7 +12,7 @@
 %token IF IN RANGE ELSE PRINT COLON 
 %token NUM ID 
 %token TAB OCB CCB NEWLINE INDENT
-%token TRUE COMMA FALSE
+%token TRUE COMMA FALSE STRING
  
 %right '='
 %left AND OR
@@ -26,7 +26,9 @@ start: Assignment1 start
    | CompoundStatement start
    | INDENT Assignment1 start
    | INDENT CompoundStatement start
-   | 
+   | PrintFunc start
+   | INDENT PrintFunc start
+   |
    ;
 
 Assignment1: ID '=' E NEWLINE {printf("An assignment expression\n");}
@@ -49,12 +51,16 @@ T:   T '+' T
  
 CompoundStatement: IfStatement
    | ForStatement
+   | IfElseStatement
    ;
 
 IfStatement: IF condition COLON NEWLINE INDENT
    ;
 
 ForStatement: FOR ID IN RANGE OCB RangeElements CCB COLON NEWLINE INDENT
+   ;
+
+IfElseStatement: IF condition COLON NEWLINE INDENT start ELSE COLON NEWLINE INDENT
    ;
 
 RangeElements:	Expr1
@@ -75,12 +81,18 @@ Expr1: ID
    | NUM
    ;
 
+PrintFunc: PRINT OCB STRING CCB NEWLINE
+   | PRINT OCB Expr1 CCB NEWLINE
+   ;
+
 RelOp: LE 
    | GE 
    | EQ 
    | NE 
    | LT 
    | GT
+   | AND
+   | OR
    ;
 %%
 

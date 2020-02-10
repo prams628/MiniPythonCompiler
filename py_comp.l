@@ -31,6 +31,7 @@ True				 {return TRUE;}
 False				 {return FALSE;}
 [0-9]+			 	 {printf("returning %s\n", yytext); return(NUM);}
 [a-zA-Z_]([a-zA-Z_]|[0-9])*	 {printf("returning %s\n", yytext); return ID;}
+(\".*\")			 {return (STRING);}
 #.*       			 ;
 .       			 {return yytext[0];}
 
