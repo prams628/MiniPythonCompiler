@@ -7,8 +7,9 @@
 
 %%
 
-[ \t]   			 {printf("Returning space or tab\n");}
-[\n]				 { yylineno = yylineno + 1;}
+[\t]				 {return (INDENT);}
+[ ]   				 {printf("Returning space or tab\n");}
+[\n]				 { yylineno = yylineno + 1; return (NEWLINE);}
 if    				 {printf("Returning IF\n"); return(IF);}
 else  				 {return(ELSE);}
 for   			 	 {printf("returning for\n"); return (FOR);}
@@ -27,6 +28,7 @@ range				 {return (RANGE);}
 ">="    			 {return(GE);}
 "<"     			 {return(LT);}
 True				 {return TRUE;}
+False				 {return FALSE;}
 [0-9]+			 	 {printf("returning %s\n", yytext); return(NUM);}
 [a-zA-Z_]([a-zA-Z_]|[0-9])*	 {printf("returning %s\n", yytext); return ID;}
 #.*       			 ;

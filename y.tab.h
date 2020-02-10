@@ -58,16 +58,19 @@ extern int yydebug;
     TAB = 268,
     OCB = 269,
     CCB = 270,
-    TRUE = 271,
-    COMMA = 272,
-    AND = 273,
-    OR = 274,
-    LE = 275,
-    GE = 276,
-    EQ = 277,
-    NE = 278,
-    LT = 279,
-    GT = 280
+    NEWLINE = 271,
+    INDENT = 272,
+    TRUE = 273,
+    COMMA = 274,
+    FALSE = 275,
+    AND = 276,
+    OR = 277,
+    LE = 278,
+    GE = 279,
+    EQ = 280,
+    NE = 281,
+    LT = 282,
+    GT = 283
   };
 #endif
 /* Tokens.  */
@@ -84,16 +87,19 @@ extern int yydebug;
 #define TAB 268
 #define OCB 269
 #define CCB 270
-#define TRUE 271
-#define COMMA 272
-#define AND 273
-#define OR 274
-#define LE 275
-#define GE 276
-#define EQ 277
-#define NE 278
-#define LT 279
-#define GT 280
+#define NEWLINE 271
+#define INDENT 272
+#define TRUE 273
+#define COMMA 274
+#define FALSE 275
+#define AND 276
+#define OR 277
+#define LE 278
+#define GE 279
+#define EQ 280
+#define NE 281
+#define LT 282
+#define GT 283
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
