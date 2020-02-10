@@ -1,6 +1,7 @@
 *.h
 
 mock_python_file.py
+test.py
 
 *.c
 
