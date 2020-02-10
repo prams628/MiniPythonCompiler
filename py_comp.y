@@ -52,6 +52,7 @@ T:   T '+' T
 CompoundStatement: IfStatement
    | ForStatement
    | IfElseStatement
+   | WhileStatement
    ;
 
 IfStatement: IF condition COLON NEWLINE INDENT
@@ -61,6 +62,9 @@ ForStatement: FOR ID IN RANGE OCB RangeElements CCB COLON NEWLINE INDENT
    ;
 
 IfElseStatement: IF condition COLON NEWLINE INDENT start ELSE COLON NEWLINE INDENT
+   ;
+
+WhileStatement: WHILE OCB condition CCB COLON NEWLINE INDENT
    ;
 
 RangeElements:	Expr1
