@@ -7,20 +7,20 @@
 
 %%
 
-[\t]				 {return (INDENT);}
+[\t]+				 {printf("Returning INDENT\n"); return (INDENT);}
 [ ]   				 {printf("Returning space or tab\n");}
-[\n]				 { yylineno = yylineno + 1; return (NEWLINE);}
+[\n]				 { printf("%d\n", yylineno++); return (NEWLINE);}
 if    				 {printf("Returning IF\n"); return(IF);}
-else  				 {return(ELSE);}
+else  				 {printf("Returning ELSE\n"); return(ELSE);}
 for   			 	 {printf("returning for\n"); return (FOR);}
 while 				 {return(WHILE);}
 in    				 {printf("Returning IN\n"); return(IN);}
 print				 {return(PRINT);}
 range				 {return (RANGE);}
 ","					 {return (COMMA);}
-":"					 {return(COLON);}
+":"					 {printf("Returning COLON\n"); return(COLON);}
 "("					 {return (OCB);}
-")"					 {return (CCB);}
+")"					 {printf("Returning CCB\n");return (CCB);}
 "=="    			 {return(EQ);}
 "<="    			 {return(LE);}
 "!="    			 {return(NE);}

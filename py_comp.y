@@ -22,14 +22,14 @@
  
 %%
  
-start: Assignment1 NEWLINE start
-   | CompoundStatement NEWLINE start
-   | INDENT Assignment1 NEWLINE start
-   | INDENT CompoundStatement NEWLINE start
+start: Assignment1 start
+   | CompoundStatement start
+   | INDENT Assignment1 start
+   | INDENT CompoundStatement start
    | 
    ;
 
-Assignment1: ID '=' E {printf("An assignment expression\n");}
+Assignment1: ID '=' E NEWLINE {printf("An assignment expression\n");}
   ;
  
 E: T	
@@ -51,10 +51,10 @@ CompoundStatement: IfStatement
    | ForStatement
    ;
 
-IfStatement: IF condition COLON
+IfStatement: IF condition COLON NEWLINE INDENT
    ;
 
-ForStatement: FOR ID IN RANGE OCB RangeElements CCB COLON
+ForStatement: FOR ID IN RANGE OCB RangeElements CCB COLON NEWLINE INDENT
    ;
 
 RangeElements:	Expr1

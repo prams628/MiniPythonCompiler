@@ -3,3 +3,5 @@
 mock_python_file.py
 
 *.c
+
+a.out
