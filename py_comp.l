@@ -37,7 +37,11 @@ False				 {printf("T_FALSE\n"); return FALSE;}
 								yylval.txt = strdup(yytext);
 								return ID;
 							}
-(\".*\")			 {printf("T_STRING"); return (STRING);}
+\".*\"						{ 
+				  				yylval.txt = strdup(yytext);
+								printf("T_STRING\n");
+								return (STRING);
+							}
 #.*\n       		 {yylineno++;}
 .       			 {return yytext[0];}
 [0-9]([a-zA-Z_]|[0-9])*		 {printf("Error occured at line %d.\nVariable name can't start with a digit. \n", yylineno);}
