@@ -3,20 +3,23 @@
    #include<stdlib.h>
    #include<string.h>
    #include<ctype.h>
+
+   #define TYPE "integer" 
  
    struct sym_table_entry
 	{
 		char name[100];
 		int value;
 		int scope, index;
+      char type[100];
 	};
 	struct sym_table_entry symbol_table[100];
 
 	int count = 0, temp;
 	char identifier[100], buffer[10];
-	void add(struct sym_table_entry[], char[],int);
+	void add(struct sym_table_entry[], char[],int, char[]);
 	void display(struct sym_table_entry[]);
-	void search_update(struct sym_table_entry[], char[], int);
+	void search_update(struct sym_table_entry[], char[], int, char[]);
 %}
  
 %token FOR WHILE
@@ -51,7 +54,7 @@ start: Assignment1 start
    ;
 
 Assignment1: ID '=' E NEWLINE {
-							   	search_update(symbol_table, $1, temp);
+							   	search_update(symbol_table, $1, temp, TYPE);
 							}
     ;
  
@@ -127,7 +130,7 @@ RelOp: LE
 
 
 
-void search_update(struct sym_table_entry table[],char name[], int value)
+void search_update(struct sym_table_entry table[],char name[], int value, char type[])
 {
 	int i;
 	for(i = 0; i < count; i++)
@@ -138,14 +141,15 @@ void search_update(struct sym_table_entry table[],char name[], int value)
 			return;
 		}
 	}
-	add(table, name, value);
+	add(table, name, value, type);
 }
 
-void add(struct sym_table_entry table[], char name[], int value)
+void add(struct sym_table_entry table[], char name[], int value, char type[])
 {
 	struct sym_table_entry temp;
 	strcpy(temp.name,name);
 	temp.value=value;
+   strcpy(temp.type, TYPE);
 	temp.scope = 1;
 	temp.index = count;
 	table[count] = temp;
@@ -156,7 +160,7 @@ void display(struct sym_table_entry table[])
 {
 	int i;
 	for(i = 0; i < count; i++)
-		printf("%s %d\n", table[i].name, table[i].value);
+		printf("%s %s %d\n", table[i].name, table[i].type, table[i].value);
 }
 
 int main(int argc, char *argv[])
