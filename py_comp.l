@@ -31,7 +31,7 @@ False				 {printf("T_FALSE\n"); return FALSE;}
 						printf("T_DIGIT\n");
 						yylval.iVal = atoi(yytext);
 						return(NUM);
-					}
+					 }
 [a-zA-Z_]([a-zA-Z_]|[0-9])*	 {
 								printf("T_ID\n");
 								yylval.txt = strdup(yytext);
@@ -40,6 +40,7 @@ False				 {printf("T_FALSE\n"); return FALSE;}
 (\".*\")			 {printf("T_STRING"); return (STRING);}
 #.*\n       		 {yylineno++;}
 .       			 {return yytext[0];}
+[0-9]([a-zA-Z_]|[0-9])*		 {printf("Error occured at line %d.\nVariable name can't start with a digit. \n", yylineno);}
 
 %%
 
