@@ -6,7 +6,7 @@
 %%
 
 [\t]+				 {printf("T_INDENT\n"); return (INDENT);}
-[ ]  				 {printf("T_SPACE\n");}
+[ ]  				 {}
 [\n]				 {printf("%d\n", yylineno++); return (NEWLINE);}
 if    				 {printf("T_IF\n"); return(IF);}
 else  				 {printf("T_ELSE\n"); return(ELSE);}
@@ -38,7 +38,7 @@ False				 {printf("T_FALSE\n"); return FALSE;}
 								return ID;
 							}
 (\".*\")			 {printf("T_STRING"); return (STRING);}
-#.*       			 ;
+#.*\n       		 {yylineno++;}
 .       			 {return yytext[0];}
 
 %%

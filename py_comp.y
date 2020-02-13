@@ -11,12 +11,12 @@
 		char name[100];
 		int value;
 		int scope, index;
-      		char type[100];
+      char type[100];
 	};
 	struct sym_table_entry symbol_table[100];
 
 	int count = 0, temp;
-	char identifier[100], buffer[10];
+	char identifier[100];
 	void add(struct sym_table_entry[], char[],int, char[]);
 	void display(struct sym_table_entry[]);
 	void search_update(struct sym_table_entry[], char[], int, char[]);
@@ -70,14 +70,13 @@ T :   T '+' T { $$ = $1 + $3; }
 	| T '*' T { $$ = $1 * $3; } 
 	| T '/' T { $$ = $1 / $3; } 
 	| '-' NUM { $$ = -$2; } 
-	| '(' T ')' { $$ = $2; } 
+	| OCB T CCB { $$ = $2; } 
 	| NUM { $$ = $1; }
 	; 
  
 CompoundStatement: IfStatement
    | ForStatement
    | WhileStatement
-   | IfElseStatement
    ;
 
 IfStatement: IF condition COLON NEWLINE INDENT
@@ -86,13 +85,7 @@ IfStatement: IF condition COLON NEWLINE INDENT
 ForStatement: FOR ID IN RANGE OCB RangeElements CCB COLON NEWLINE INDENT
    ;
 
-IfElseStatement: IfStatement start ELSE COLON NEWLINE INDENT
-   {
-      printf("Expecting an ifelse\n");
-   }
-   ;
-
-WhileStatement: WHILE OCB condition CCB COLON NEWLINE INDENT
+WhileStatement: WHILE condition COLON NEWLINE INDENT
    ;
 
 RangeElements:	Expr1
