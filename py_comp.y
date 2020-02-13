@@ -4,22 +4,28 @@
    #include<string.h>
    #include<ctype.h>
 
-   #define TYPE "integer" 
+   #define INT 1
+   #define STR 2
  
    struct sym_table_entry
 	{
-		char name[100];
-		int value;
-		int scope, index;
-      char type[100];
+		// type stores if the variable is a function or an identifier. since we aren't handling functions, it's always 
+		// "identifier"
+		char name[100], type[15], sValue[100];
+		int iValue;
+		int scope, index, dt;
 	};
 	struct sym_table_entry symbol_table[100];
 
-	int count = 0, temp;
-	char identifier[100];
-	void add(struct sym_table_entry[], char[],int, char[]);
+	int count = 0, temp_int, i, random_variable, variable_found = 0, int_or_str;
+	char temp_string[100];
+
+	// Some function definitions required
+	void add_int(struct sym_table_entry[], char[], int, int);
+	void add_str(struct sym_table_entry[], char[], char[], int);
 	void display(struct sym_table_entry[]);
-	void search_update(struct sym_table_entry[], char[], int, char[]);
+	void search_update_int(struct sym_table_entry[], char[], int, int);
+	void search_update_str(struct sym_table_entry[], char[], char[], int);
 %}
  
 %token FOR WHILE
@@ -33,7 +39,7 @@
 	char *txt;
 }
 
-%type <txt> ID
+%type <txt> ID STRING
 %type <iVal> NUM T
  
 %right '='
@@ -54,15 +60,23 @@ start: Assignment1 start
    ;
 
 Assignment1: ID '=' E NEWLINE {
-							   	search_update(symbol_table, $1, temp, TYPE);
+                           if(int_or_str == 1)
+							   	search_update_int(symbol_table, $1, temp_int, INT);
+                           else
+                            	search_update_str(symbol_table, $1, temp_string, STR);
 							}
     ;
  
-E:  T
-      {
-         temp = $1;
-         printf("temp: %d\n", temp);
-      }
+E:  T 
+   {
+         temp_int = $1;
+         int_or_str = INT;
+   }
+   | STRING 
+   {
+      strcpy(temp_string, $1);
+      int_or_str = STR;
+   }
 	;
   
 T :   T '+' T { $$ = $1 + $3; } 
@@ -72,6 +86,26 @@ T :   T '+' T { $$ = $1 + $3; }
 	| '-' NUM { $$ = -$2; } 
 	| OCB T CCB { $$ = $2; } 
 	| NUM { $$ = $1; }
+    | ID {
+		strcpy(temp_string, $1);
+		variable_found = 0;
+		for(i = 0; i < count; i++)
+		{
+			if(strcmp(symbol_table[i].name, temp_string) == 0)
+			{
+				random_variable = symbol_table[i].iValue;
+				variable_found = 1;
+				break;
+			}
+		}
+		if(!variable_found)
+		{
+			printf("Variable %s not defined. Stopping the execution\n", temp_string);
+			exit(1);
+		}
+		else
+			$$ = random_variable;
+    }
 	; 
  
 CompoundStatement: IfStatement
@@ -123,26 +157,69 @@ RelOp: LE
 
 
 
-void search_update(struct sym_table_entry table[],char name[], int value, char type[])
+void search_update_int(struct sym_table_entry table[],char name[], int value, int type)
 {
 	int i;
 	for(i = 0; i < count; i++)
 	{
 		if(strcmp(table[i].name, name) == 0)
 		{
-			table[i].value = value;
-			return;
+			if(table[i].dt == INT)
+			{
+				table[i].iValue = value;
+				return;
+			}
+			else
+			{
+				printf("Variable of string type\n");
+				exit(1);
+			}
 		}
 	}
-	add(table, name, value, type);
+	add_int(table, name, value, type);
 }
 
-void add(struct sym_table_entry table[], char name[], int value, char type[])
+// This function will check if the string is already present in the symbol table
+void search_update_str(struct sym_table_entry table[],char name[], char value[], int type)
+{
+	int i;
+	for(i = 0; i < count; i++)
+	{
+		if(strcmp(table[i].name, name) == 0)
+		{
+			if(table[i].dt == STR)
+			{
+				strcpy(table[i].sValue, value);
+				return;
+			}
+			else
+			{
+				printf("Variable of integer type\n");
+				exit(1);
+			}
+		}
+	}
+	add_str(table, name, value, type);
+}
+
+void add_int(struct sym_table_entry table[], char name[], int value, int type)
 {
 	struct sym_table_entry temp;
 	strcpy(temp.name,name);
-	temp.value=value;
-   strcpy(temp.type, TYPE);
+	temp.iValue = value;
+	temp.dt = type;
+	temp.scope = 1;
+	temp.index = count;
+	table[count] = temp;
+	count++;
+}
+
+void add_str(struct sym_table_entry table[], char name[], char value[], int type)
+{
+	struct sym_table_entry temp;
+	strcpy(temp.name,name);
+	strcpy(temp.sValue, value);
+	temp.dt = type;
 	temp.scope = 1;
 	temp.index = count;
 	table[count] = temp;
@@ -153,7 +230,7 @@ void display(struct sym_table_entry table[])
 {
 	int i;
 	for(i = 0; i < count; i++)
-		printf("%s %s %d\n", table[i].name, table[i].type, table[i].value);
+		printf("%s %d %d %s\n", table[i].name, table[i].dt, table[i].iValue, table[i].sValue);
 }
 
 int main(int argc, char *argv[])
