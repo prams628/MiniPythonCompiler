@@ -11,7 +11,7 @@
 		char name[100];
 		int value;
 		int scope, index;
-      char type[100];
+      		char type[100];
 	};
 	struct sym_table_entry symbol_table[100];
 
