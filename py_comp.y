@@ -65,6 +65,7 @@ Assignment1: ID '=' E NEWLINE {
                            else
                             	search_update_str(symbol_table, $1, temp_string, STR);
 							}
+	| error {yyerrok; yyclearin;}
     ;
  
 E:  T 
