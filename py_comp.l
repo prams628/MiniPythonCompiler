@@ -1,37 +1,43 @@
 %{
 	#include "y.tab.h"
-	extern int yylineno;
-	extern char *yytext;
-	extern FILE *yyin;
+
 %}
 
 %%
 
-[\t]+				 {printf("Returning INDENT\n"); return (INDENT);}
-[ ]  				 {printf("Returning space or tab\n");}
+[\t]+				 {printf("T_INDENT\n"); return (INDENT);}
+[ ]  				 {printf("T_SPACE\n");}
 [\n]				 {printf("%d\n", yylineno++); return (NEWLINE);}
-if    				 {printf("Returning IF\n"); return(IF);}
-else  				 {printf("Returning ELSE\n"); return(ELSE);}
-for   			 	 {printf("returning for\n"); return (FOR);}
-while 				 {printf("returning While\n"); return(WHILE);}
-in    				 {printf("Returning IN\n"); return(IN);}
+if    				 {printf("T_IF\n"); return(IF);}
+else  				 {printf("T_ELSE\n"); return(ELSE);}
+for   			 	 {printf("T_FOR\n"); return (FOR);}
+while 				 {printf("T_WHILE\n"); return(WHILE);}
+in    				 {printf("T_IN\n"); return(IN);}
 print				 {return(PRINT);}
-range				 {return (RANGE);}
-","					 {return (COMMA);}
-":"					 {printf("Returning COLON\n"); return(COLON);}
-"("					 {printf("Returning OCB\n"); return (OCB);}
-")"					 {printf("Returning CCB\n"); return (CCB);}
-"=="    			 {return(EQ);}
-"<="    			 {return(LE);}
-"!="    			 {return(NE);}
-">"				 	 {return(GT);}
-">="    			 {return(GE);}
-"<"     			 {return(LT);}
-True				 {return TRUE;}
-False				 {return FALSE;}
-[0-9]+			 	 {printf("returning %s\n", yytext); return(NUM);}
-[a-zA-Z_]([a-zA-Z_]|[0-9])*	 {printf("returning %s\n", yytext); return ID;}
-(\".*\")			 {return (STRING);}
+range				 {printf("T_RANGE\n"); return (RANGE);}
+","					 {printf("T_COMMA\n"); return (COMMA);}
+":"					 {printf("T_COLON\n"); return(COLON);}
+"("					 {printf("T_OCB\n"); return (OCB);}
+")"					 {printf("T_CCB\n"); return (CCB);}
+"=="    			 {printf("T_EQ\n"); return(EQ);}
+"<="    			 {printf("T_LE\n"); return(LE);}
+"!="    			 {printf("T_NE\n"); return(NE);}
+">"				 	 {printf("T_GT\n"); return(GT);}
+">="    			 {printf("T_GE\n"); return(GE);}
+"<"     			 {printf("T_LT\n"); return(LT);}
+True				 {printf("T_TRUE\n"); return TRUE;}
+False				 {printf("T_FALSE\n"); return FALSE;}
+[0-9]+			 	 {
+						printf("T_DIGIT\n");
+						yylval.iVal = atoi(yytext);
+						return(NUM);
+					}
+[a-zA-Z_]([a-zA-Z_]|[0-9])*	 {
+								printf("T_ID\n");
+								yylval.txt = strdup(yytext);
+								return ID;
+							}
+(\".*\")			 {printf("T_STRING"); return (STRING);}
 #.*       			 ;
 .       			 {return yytext[0];}
 

@@ -4,8 +4,19 @@
    #include<string.h>
    #include<ctype.h>
  
-   extern FILE *fp;
- 
+   struct sym_table_entry
+	{
+		char name[100];
+		int value;
+		int scope, index;
+	};
+	struct sym_table_entry symbol_table[100];
+
+	int count = 0, temp;
+	char identifier[100], buffer[10];
+	void add(struct sym_table_entry[], char[],int);
+	void display(struct sym_table_entry[]);
+	void search_update(struct sym_table_entry[], char[], int);
 %}
  
 %token FOR WHILE
@@ -13,6 +24,14 @@
 %token NUM ID 
 %token TAB OCB CCB NEWLINE INDENT
 %token TRUE COMMA FALSE STRING
+
+%union 	{
+	int iVal;
+	char *txt;
+}
+
+%type <txt> ID
+%type <iVal> NUM T
  
 %right '='
 %left AND OR
@@ -31,28 +50,31 @@ start: Assignment1 start
    |
    ;
 
-Assignment1: ID '=' E NEWLINE {printf("An assignment expression\n");}
-  ;
+Assignment1: ID '=' E NEWLINE {
+							   	search_update(symbol_table, $1, temp);
+							}
+    ;
  
-E: T	
+E:  T
+      {
+         temp = $1;
+         printf("temp: %d\n", temp);
+      }
 	;
   
-T:   T '+' T 
-	| T '-' T 
-	| T '*' T 
-	| T '/' T 
-	| '-' NUM 
-	| '-' ID 
-	| '(' T ')' 
-	| NUM 
-	| ID 
-   |
-   ;
+T :   T '+' T { $$ = $1 + $3; } 
+	| T '-' T { $$ = $1 - $3; } 
+	| T '*' T { $$ = $1 * $3; } 
+	| T '/' T { $$ = $1 / $3; } 
+	| '-' NUM { $$ = -$2; } 
+	| '(' T ')' { $$ = $2; } 
+	| NUM { $$ = $1; }
+	; 
  
 CompoundStatement: IfStatement
    | ForStatement
-   | IfElseStatement
    | WhileStatement
+   | IfElseStatement
    ;
 
 IfStatement: IF condition COLON NEWLINE INDENT
@@ -61,7 +83,10 @@ IfStatement: IF condition COLON NEWLINE INDENT
 ForStatement: FOR ID IN RANGE OCB RangeElements CCB COLON NEWLINE INDENT
    ;
 
-IfElseStatement: IF condition COLON NEWLINE INDENT start ELSE COLON NEWLINE INDENT
+IfElseStatement: IfStatement start ELSE COLON NEWLINE INDENT
+   {
+      printf("Expecting an ifelse\n");
+   }
    ;
 
 WhileStatement: WHILE OCB condition CCB COLON NEWLINE INDENT
@@ -100,12 +125,47 @@ RelOp: LE
    ;
 %%
 
+
+
+void search_update(struct sym_table_entry table[],char name[], int value)
+{
+	int i;
+	for(i = 0; i < count; i++)
+	{
+		if(strcmp(table[i].name, name) == 0)
+		{
+			table[i].value = value;
+			return;
+		}
+	}
+	add(table, name, value);
+}
+
+void add(struct sym_table_entry table[], char name[], int value)
+{
+	struct sym_table_entry temp;
+	strcpy(temp.name,name);
+	temp.value=value;
+	temp.scope = 1;
+	temp.index = count;
+	table[count] = temp;
+	count++;
+}
+
+void display(struct sym_table_entry table[])
+{
+	int i;
+	for(i = 0; i < count; i++)
+		printf("%s %d\n", table[i].name, table[i].value);
+}
+
 int main(int argc, char *argv[])
 {
    if(yyparse()==1)
        printf("Parsing failed\n");
       else
        printf("Parsing completed successfully\n");
+	display(symbol_table);
    return 0;
 }
  
