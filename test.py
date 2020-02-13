@@ -1,5 +1,5 @@
+x = 10
 while(True):
-    for i in range(10):
-        x = 2
-    if(i == 10):
-        x = x + 1
+	y = 4
+	if True:
+		x = 5
