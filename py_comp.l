@@ -7,7 +7,7 @@
 
 [\t]+				 {printf("T_INDENT\n"); return (INDENT);}
 [ ]  				 {}
-[\n]				 {printf("%d\n", yylineno++); return (NEWLINE);}
+[\n]				 {yylineno++; return (NEWLINE);}
 if    				 {printf("T_IF\n"); return(IF);}
 else  				 {printf("T_ELSE\n"); return(ELSE);}
 for   			 	 {printf("T_FOR\n"); return (FOR);}

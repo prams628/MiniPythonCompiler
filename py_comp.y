@@ -12,13 +12,14 @@
 		// type stores if the variable is a function or an identifier. since we aren't handling functions, it's always 
 		// "identifier"
 		char name[100], type[15], sValue[100];
-		int iValue;
+		int iValue, lineno;
 		int scope, index, dt;
 	};
 	struct sym_table_entry symbol_table[100];
 
 	int count = 0, temp_int, i, random_variable, variable_found = 0, int_or_str;
 	char temp_string[100];
+	extern int yylineno;
 
 	// Some function definitions required
 	void add_int(struct sym_table_entry[], char[], int, int);
@@ -167,7 +168,6 @@ void search_update_int(struct sym_table_entry table[],char name[], int value, in
 		{
 			if(table[i].dt == INT)
 			{
-				table[i].iValue = value;
 				return;
 			}
 			else
@@ -190,7 +190,6 @@ void search_update_str(struct sym_table_entry table[],char name[], char value[],
 		{
 			if(table[i].dt == STR)
 			{
-				strcpy(table[i].sValue, value);
 				return;
 			}
 			else
@@ -209,8 +208,10 @@ void add_int(struct sym_table_entry table[], char name[], int value, int type)
 	strcpy(temp.name,name);
 	temp.iValue = value;
 	temp.dt = type;
+	strcpy(temp.type, "identifier");
 	temp.scope = 1;
 	temp.index = count;
+	temp.lineno = yylineno - 1;
 	table[count] = temp;
 	count++;
 }
@@ -222,6 +223,8 @@ void add_str(struct sym_table_entry table[], char name[], char value[], int type
 	strcpy(temp.sValue, value);
 	temp.dt = type;
 	temp.scope = 1;
+	temp.lineno = yylineno - 1;
+	strcpy(temp.type, "identifier");
 	temp.index = count;
 	table[count] = temp;
 	count++;
@@ -231,7 +234,12 @@ void display(struct sym_table_entry table[])
 {
 	int i;
 	for(i = 0; i < count; i++)
-		printf("%s %d %d %s\n", table[i].name, table[i].dt, table[i].iValue, table[i].sValue);
+	{
+		if(table[i].dt == INT)
+			printf("%s INT %d %s %d\n", table[i].name, table[i].iValue, table[i].type, table[i].lineno);
+		else
+			printf("%s STR %s %s %d\n", table[i].name, table[i].sValue, table[i].type, table[i].lineno);
+	}
 }
 
 int main(int argc, char *argv[])
