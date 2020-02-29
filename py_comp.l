@@ -1,6 +1,6 @@
 %{
 	#include "y.tab.h"
-
+	void recover();
 %}
 
 %%
@@ -44,7 +44,9 @@ False				 {printf("T_FALSE\n"); return FALSE;}
 							}
 #.*\n       		 {yylineno++;}
 .       			 {return yytext[0];}
-[0-9]([a-zA-Z_]|[0-9])*		 {printf("Error occured at line %d.\nVariable name can't start with a digit. \n", yylineno);}
+[0-9]([a-zA-Z_]|[0-9])*	 {printf("Error occured at line %d.\nVariable name can't start with a digit. \n", yylineno);
+						
+						 }
 
 %%
 

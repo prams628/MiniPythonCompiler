@@ -172,7 +172,7 @@ void search_update_int(struct sym_table_entry table[],char name[], int value, in
 			}
 			else
 			{
-				printf("Variable of string type\n");
+				printf("Trying to assign string value to an integer. I give up\n");
 				exit(1);
 			}
 		}
@@ -194,7 +194,7 @@ void search_update_str(struct sym_table_entry table[],char name[], char value[],
 			}
 			else
 			{
-				printf("Variable of integer type\n");
+				printf("Trying to assign integer value to a string. I give up\n");
 				exit(1);
 			}
 		}
@@ -254,6 +254,6 @@ int main(int argc, char *argv[])
  
 int yyerror(char *s)
 {
-   printf("%s\n", s);
+   printf("%s at line %d\n", s, yylineno);
    return 1;
 }
