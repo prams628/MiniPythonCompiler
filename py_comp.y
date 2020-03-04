@@ -144,6 +144,8 @@ T : NUM
 		sprintf(temp, "%d", yylval.iVal); 
 		$$ = mknode(0, 0, temp);
 	}
+	
+	| OCB E CCB {$$ = $2;}
 	;
     
 %%
