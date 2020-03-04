@@ -65,6 +65,7 @@
 %token NUM ID 
 %token TAB OCB CCB NEWLINE INDENT
 %token TRUE COMMA FALSE STRING
+%token ADDITION SUBTRACT MULTIPLY DIVIDE
 
 %union 	{
 	int iVal;
@@ -79,8 +80,8 @@
 %right '='
 %left AND OR
 %left LE GE EQ NE LT GT
-%left '+' '-'
-%left '*' '/'
+%left ADDITION SUBTRACT
+%left MULTIPLY DIVIDE
  
 %%
  
@@ -96,6 +97,7 @@ Assignment1: id '=' E NEWLINE
 									$$ = mknode($1, $3, "=");
 									search_update_int(symbol_table, $1 -> token, atoi($3 -> token), INT);
 									printtree($$);
+									printf("\n");
 								}
 							}
 	| error {yyerrok; yyclearin;}
@@ -104,9 +106,34 @@ Assignment1: id '=' E NEWLINE
 id: ID { $$ = mknode(0, 0, (char*)yylval.txt); }
 	;
  
-E:  T 
+E:  E ADDITION T 
+	{
+		$$ = mknode($1, $3, "+");
+		int_or_str = INT;
+	}
+
+	| E SUBTRACT T 
+	{
+		$$ = mknode($1, $3, "-");
+		int_or_str = INT;
+	}
+
+	| E MULTIPLY T 
+	{
+		$$ = mknode($1, $3, "*");
+		int_or_str = INT;
+		printf("T * T\n");
+	}
+
+	| E DIVIDE T 
+	{
+		$$ = mknode($1, $3, "/");
+		int_or_str = INT;
+	}
+
+	| T 
     {
-        $$ = $1;
+		$$ = $1;
         int_or_str = INT;
    	}
 	;
@@ -115,7 +142,7 @@ T : NUM
 	{ 
 		char *temp = (char*)malloc(sizeof(char) * 10);
 		sprintf(temp, "%d", yylval.iVal); 
-		$$ = mknode(0, 0, temp); 
+		$$ = mknode(0, 0, temp);
 	}
 	;
     

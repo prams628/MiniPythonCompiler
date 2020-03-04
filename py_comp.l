@@ -15,6 +15,10 @@ while 				 {printf("T_WHILE\n"); return(WHILE);}
 in    				 {printf("T_IN\n"); return(IN);}
 print				 {return(PRINT);}
 range				 {printf("T_RANGE\n"); return (RANGE);}
+"+"					 { printf("T_PL\n"); return(ADDITION); }
+"-"					 { printf("T_MI\n"); return(SUBTRACT); }
+"*"					 { printf("T_MU\n"); return(MULTIPLY); }
+"/"					 { printf("T_DI\n"); return(DIVIDE); }
 ","					 {printf("T_COMMA\n"); return (COMMA);}
 ":"					 {printf("T_COLON\n"); return(COLON);}
 "("					 {printf("T_OCB\n"); return (OCB);}
