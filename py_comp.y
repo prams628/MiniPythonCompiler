@@ -17,6 +17,37 @@
 	};
 	struct sym_table_entry symbol_table[100];
 
+	typedef struct ASTNode
+	{
+		struct ASTNode *left;
+		struct ASTNode *right;
+		char *token;
+	} node;
+
+	node *mknode(node *left, node *right, char *token)
+	{
+		node *newnode = (node *)malloc(sizeof(node));
+		char *newstr = (char *)malloc(strlen(token)+1);
+		strcpy(newstr, token);
+		newnode->left = left;
+		newnode->right = right;
+		newnode->token = newstr;
+		return(newnode); 
+	}
+
+	void printtree(node *tree)
+	{
+		if (tree->left || tree->right)
+			printf("(");
+		printf(" %s ", tree->token);
+		if (tree->left)
+			printtree(tree->left);
+		if (tree->right)
+			printtree(tree->right);
+		if (tree->left || tree->right)
+			printf(")"); 
+	}
+
 	int count = 0, temp_int, i, random_variable, variable_found = 0, int_or_str;
 	char temp_string[100];
 	extern int yylineno;
@@ -38,10 +69,12 @@
 %union 	{
 	int iVal;
 	char *txt;
+	struct ASTNode *NODE;
 }
 
 %type <txt> ID STRING
-%type <iVal> NUM T
+%type <iVal> NUM
+%type <NODE> id Assignment1 T E
  
 %right '='
 %left AND OR
@@ -52,109 +85,40 @@
 %%
  
 start: Assignment1 start
-   | CompoundStatement start
    | INDENT Assignment1 start
-   | INDENT CompoundStatement start
-   | PrintFunc start
-   | INDENT PrintFunc start
    |
    ;
 
-Assignment1: ID '=' E NEWLINE {
-                           if(int_or_str == 1)
-							   	search_update_int(symbol_table, $1, temp_int, INT);
-                           else
-                            	search_update_str(symbol_table, $1, temp_string, STR);
+Assignment1: id '=' E NEWLINE 
+							{
+                            	if(int_or_str == 1)
+								{
+									$$ = mknode($1, $3, "=");
+									search_update_int(symbol_table, $1 -> token, atoi($3 -> token), INT);
+									printtree($$);
+								}
 							}
 	| error {yyerrok; yyclearin;}
     ;
+
+id: ID { $$ = mknode(0, 0, (char*)yylval.txt); }
+	;
  
 E:  T 
-   {
-         temp_int = $1;
-         int_or_str = INT;
-   }
-   | STRING 
-   {
-      strcpy(temp_string, $1);
-      int_or_str = STR;
-   }
+    {
+        $$ = $1;
+        int_or_str = INT;
+   	}
 	;
   
-T :   T '+' T { $$ = $1 + $3; } 
-	| T '-' T { $$ = $1 - $3; } 
-	| T '*' T { $$ = $1 * $3; } 
-	| T '/' T { $$ = $1 / $3; } 
-	| '-' NUM { $$ = -$2; } 
-	| OCB T CCB { $$ = $2; } 
-	| NUM { $$ = $1; }
-    | ID {
-		strcpy(temp_string, $1);
-		variable_found = 0;
-		for(i = 0; i < count; i++)
-		{
-			if(strcmp(symbol_table[i].name, temp_string) == 0)
-			{
-				random_variable = symbol_table[i].iValue;
-				variable_found = 1;
-				break;
-			}
-		}
-		if(!variable_found)
-		{
-			printf("Variable %s not defined. Stopping the execution\n", temp_string);
-			exit(1);
-		}
-		else
-			$$ = random_variable;
-    }
-	; 
- 
-CompoundStatement: IfStatement
-   | ForStatement
-   | WhileStatement
-   ;
-
-IfStatement: IF condition COLON NEWLINE INDENT
-   ;
-
-ForStatement: FOR ID IN RANGE OCB RangeElements CCB COLON NEWLINE INDENT
-   ;
-
-WhileStatement: WHILE condition COLON NEWLINE INDENT
-   ;
-
-RangeElements:	Expr1
-   | Expr1 COMMA Expr1
-   | Expr1 COMMA Expr1 COMMA Expr1
-   ;
-
-condition: TRUE
-   | FALSE
-   | relationalExpression
-   ;
-
-relationalExpression: relationalExpression RelOp Expr1
-   | Expr1
-   ;
-
-Expr1: ID
-   | NUM
-   ;
-
-PrintFunc: PRINT OCB STRING CCB NEWLINE
-   | PRINT OCB Expr1 CCB NEWLINE
-   ;
-
-RelOp: LE 
-   | GE 
-   | EQ 
-   | NE 
-   | LT 
-   | GT
-   | AND
-   | OR
-   ;
+T : NUM 
+	{ 
+		char *temp = (char*)malloc(sizeof(char) * 10);
+		sprintf(temp, "%d", yylval.iVal); 
+		$$ = mknode(0, 0, temp); 
+	}
+	;
+    
 %%
 
 
@@ -248,6 +212,7 @@ int main(int argc, char *argv[])
        printf("Parsing failed\n");
       else
        printf("Parsing completed successfully\n");
+	printf("-----------------Symbol table-----------------\n");
 	display(symbol_table);
    return 0;
 }
