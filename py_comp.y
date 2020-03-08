@@ -65,7 +65,7 @@
 %token NUM ID 
 %token TAB OCB CCB NEWLINE INDENT
 %token TRUE COMMA FALSE STRING
-%token ADDITION SUBTRACT MULTIPLY DIVIDE
+%token ADDITION SUBTRACT MULTIPLY DIVIDE NOT
 
 %union 	{
 	int iVal;
@@ -75,7 +75,7 @@
 
 %type <txt> ID STRING
 %type <iVal> NUM
-%type <NODE> id Assignment1 T E
+%type <NODE> id Assignment1 T E if_stmt bool_exp bool_factor bool_term start
  
 %right '='
 %left AND OR
@@ -87,8 +87,27 @@
  
 start: Assignment1 start
    | INDENT Assignment1 start
+   | if_stmt {$$ = $1;}
    |
    ;
+
+if_stmt : IF bool_exp COLON NEWLINE INDENT start {$$ = mknode($2, $6, "If"); printtree($$); printf("\n");}
+
+bool_exp : bool_term OR bool_term {$$ = mknode($1, $3, "Or");}
+         | E LT E {$$ = mknode($1, $3, "<");}
+         | bool_term AND bool_term {$$ = mknode($1, $3, "And");}
+         | E GT E {$$ = mknode($1, $3, ">");}
+         | E LE E {$$ = mknode($1, $3, "<=");}
+         | E GE E {$$ = mknode($1, $3, ">=");}
+         | E IN ID { $$ = mknode(2, $1, "In");}
+         | bool_term {$$=$1;}; 
+
+bool_term : bool_factor {$$ = $1;}
+          | TRUE {$$ = mknode(0, 0, "True");}
+          | FALSE {$$ = mknode(0, 0, "False");}; 
+          
+bool_factor : NOT bool_factor {$$ = mknode($2, 0, "!");}
+            | OCB bool_exp CCB {$$ = $2;}; 
 
 Assignment1: id '=' E NEWLINE 
 							{
@@ -144,6 +163,8 @@ T : NUM
 		sprintf(temp, "%d", yylval.iVal); 
 		$$ = mknode(0, 0, temp);
 	}
+
+	| OCB E CCB {$$ = $2;}
 	;
     
 %%
