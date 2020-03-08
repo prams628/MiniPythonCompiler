@@ -97,6 +97,7 @@ bool_exp : bool_term OR bool_term {$$ = mknode($1, $3, "Or");}
          | E LT E {$$ = mknode($1, $3, "<");}
          | bool_term AND bool_term {$$ = mknode($1, $3, "And");}
          | E GT E {$$ = mknode($1, $3, ">");}
+	 | E EQ E {$$ = mknode($1, $3, "==");}
          | E LE E {$$ = mknode($1, $3, "<=");}
          | E GE E {$$ = mknode($1, $3, ">=");}
          | E IN ID { $$ = mknode(2, $1, "In");}
