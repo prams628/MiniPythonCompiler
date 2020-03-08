@@ -1,6 +1,4 @@
-x = 10
-while True
-	if True:
-		x = 5
-for i in range(10):
-	z = "random string"
+x = 10 * 10 / 30 
+y = 20
+if True:
+	c=1
