@@ -75,7 +75,7 @@
 
 %type <txt> ID STRING
 %type <iVal> NUM
-%type <NODE> id Assignment1 T E if_stmt while_stmt for_stmt Expr1 RangeElements bool_exp bool_factor bool_term start
+%type <NODE> id Assignment1 T E if_stmt while_stmt for_stmt Expr1 RangeElements condition bool_exp bool_factor bool_term start
  
 %right '='
 %left AND OR
@@ -97,7 +97,7 @@ if_stmt : IF bool_exp COLON NEWLINE INDENT start {$$ = mknode($2, $6, "If"); pri
 
 while_stmt : WHILE bool_exp COLON NEWLINE INDENT start {$$ = mknode($2, $6, "While"); printtree($$); printf("\n");}
 
-for_stmt : FOR id IN RANGE OCB RangeElements CCB COLON NEWLINE INDENT start {$$ = mknode($2, $11, "For"); printtree($$); printf("\n");}
+for_stmt : FOR condition COLON NEWLINE INDENT start {$$ = mknode($2, $6, "For"); printtree($$); printf("\n");}
 
 RangeElements :	Expr1 {$$ = $1;}
    | T COMMA T {$$ = mknode($1, $3, ",");}
@@ -105,6 +105,8 @@ RangeElements :	Expr1 {$$ = $1;}
 
 Expr1 : id {$$=$1;}
 	| T {$$=$1;}
+
+condition : id IN RANGE OCB RangeElements CCB {$$ = mknode($1, $5, "Condition");}
 
 bool_exp : bool_term OR bool_term {$$ = mknode($1, $3, "Or");}
          | E LT E {$$ = mknode($1, $3, "<");}
