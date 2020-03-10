@@ -13,7 +13,7 @@ else  				 {printf("T_ELSE\n"); return(ELSE);}
 for   			 	 {printf("T_FOR\n"); return (FOR);}
 while 				 {printf("T_WHILE\n"); return(WHILE);}
 in    				 {printf("T_IN\n"); return(IN);}
-print				 {return(PRINT);}
+print				 {printf("T_PRINT\n"); return(PRINT);}
 range				 {printf("T_RANGE\n"); return (RANGE);}
 "+"					 { printf("T_PL\n"); return(ADDITION); }
 "-"					 { printf("T_MI\n"); return(SUBTRACT); }

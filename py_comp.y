@@ -75,7 +75,7 @@
 
 %type <txt> ID STRING
 %type <iVal> NUM
-%type <NODE> id Assignment1 T E if_stmt while_stmt for_stmt Expr1 RangeElements condition bool_exp bool_factor bool_term start
+%type <NODE> id Assignment1 T E if_stmt while_stmt for_stmt Expr1 RangeElements condition bool_exp bool_factor bool_term start PrintFunc
  
 %right '='
 %left AND OR
@@ -89,7 +89,8 @@ start: Assignment1 start
    | INDENT Assignment1 start
    | if_stmt {$$ = $1;}
    | while_stmt {$$ = $1;}
-   |for_stmt {$$ = $1;}
+   | for_stmt {$$ = $1;}
+   | PrintFunc {$$ = $1;}
    |
    ;
 
@@ -115,7 +116,7 @@ bool_exp : bool_term OR bool_term {$$ = mknode($1, $3, "Or");}
 	 	 | E EQ E {$$ = mknode($1, $3, "==");}
          | E LE E {$$ = mknode($1, $3, "<=");}
          | E GE E {$$ = mknode($1, $3, ">=");}
-         | E IN ID { $$ = mknode(2, $1, "In");}
+         | E IN id { $$ = mknode(2, $1, "In");}
          | bool_term {$$=$1;}; 
 
 bool_term : bool_factor {$$ = $1;}
@@ -127,10 +128,18 @@ bool_factor : NOT bool_factor {$$ = mknode($2, 0, "!");}
 
 Assignment1: id '=' E NEWLINE 
 							{
+								printf("%d\n", int_or_str);
                             	if(int_or_str == 1)
 								{
 									$$ = mknode($1, $3, "=");
 									search_update_int(symbol_table, $1 -> token, atoi($3 -> token), INT);
+									printtree($$);
+									printf("\n");
+								}
+								else if(int_or_str == STR)
+								{
+									$$ = mknode($1, $3, "=");
+									search_update_str(symbol_table, $1 -> token, $3 -> token, STR);
 									printtree($$);
 									printf("\n");
 								}
@@ -157,7 +166,6 @@ E:  E ADDITION T
 	{
 		$$ = mknode($1, $3, "*");
 		int_or_str = INT;
-		printf("T * T\n");
 	}
 
 	| E DIVIDE T 
@@ -169,7 +177,6 @@ E:  E ADDITION T
 	| T 
     {
 		$$ = $1;
-        int_or_str = INT;
    	}
 	;
   
@@ -178,11 +185,26 @@ T : NUM
 		char *temp = (char*)malloc(sizeof(char) * 10);
 		sprintf(temp, "%d", yylval.iVal); 
 		$$ = mknode(0, 0, temp);
+		int_or_str = INT;
 	}
 
 	| OCB E CCB {$$ = $2;}
+
+	| STRING
+	{
+		char *temp = (char*)malloc(sizeof(char) * 50);
+		sprintf(temp, "%s", yylval.txt); 
+		$$ = mknode(0, 0, temp);	
+		int_or_str = STR;
+	}
+
+	| id { $$ = $1; }
 	;
-    
+
+PrintFunc: PRINT OCB T CCB NEWLINE start { $$ = mknode($3, 0, "Print"); printtree($$); printf("\n"); }
+   | PRINT OCB Expr1 CCB NEWLINE start { $$ = mknode($3, 0, "Print"); printtree($$); printf("\n"); }
+   ;
+
 %%
 
 
