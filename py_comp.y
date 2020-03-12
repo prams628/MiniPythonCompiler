@@ -45,10 +45,10 @@
 		if (tree->right)
 			printtree(tree->right);
 		if (tree->left || tree->right)
-			printf(")"); 
+			printf(")");
 	}
 
-	int count = 0, temp_int, i, random_variable, variable_found = 0, int_or_str;
+	int count = 0, i, temp_integer, variable_found = 0, int_or_str;
 	char temp_string[100];
 	extern int yylineno;
 
@@ -62,7 +62,7 @@
  
 %token FOR WHILE
 %token IF IN RANGE ELSE PRINT COLON 
-%token NUM ID 
+%token NUM ID ASS
 %token TAB OCB CCB NEWLINE INDENT
 %token TRUE COMMA FALSE STRING
 %token ADDITION SUBTRACT MULTIPLY DIVIDE NOT
@@ -75,7 +75,7 @@
 
 %type <txt> ID STRING
 %type <iVal> NUM
-%type <NODE> id Assignment1 T E if_stmt while_stmt for_stmt Expr1 RangeElements condition bool_exp bool_factor bool_term start PrintFunc
+%type <NODE> id Assignment1 T E if_stmt while_stmt for_stmt RangeElements condition bool_exp bool_factor bool_term start PrintFunc
  
 %right '='
 %left AND OR
@@ -94,18 +94,15 @@ start: Assignment1 start
    |
    ;
 
-if_stmt : IF bool_exp COLON NEWLINE INDENT start {$$ = mknode($2, $6, "If"); printtree($$); printf("\n");}
+if_stmt : IF bool_exp COLON NEWLINE INDENT start { $$ = mknode($2, $6, "If"); printtree($$); printf("\n"); }
 
 while_stmt : WHILE bool_exp COLON NEWLINE INDENT start {$$ = mknode($2, $6, "While"); printtree($$); printf("\n");}
 
 for_stmt : FOR condition COLON NEWLINE INDENT start {$$ = mknode($2, $6, "For"); printtree($$); printf("\n");}
 
-RangeElements :	Expr1 {$$ = $1;}
+RangeElements :	T {$$ = $1;}
    | T COMMA T {$$ = mknode($1, $3, ",");}
    ;
-
-Expr1 : id {$$=$1;}
-	| T {$$=$1;}
 
 condition : id IN RANGE OCB RangeElements CCB {$$ = mknode($1, $5, "Condition");}
 
@@ -126,9 +123,8 @@ bool_term : bool_factor {$$ = $1;}
 bool_factor : NOT bool_factor {$$ = mknode($2, 0, "!");}
             | OCB bool_exp CCB {$$ = $2;}; 
 
-Assignment1: id '=' E NEWLINE 
+Assignment1: id ASS E NEWLINE 
 							{
-								printf("%d\n", int_or_str);
                             	if(int_or_str == 1)
 								{
 									$$ = mknode($1, $3, "=");
@@ -198,11 +194,35 @@ T : NUM
 		int_or_str = STR;
 	}
 
-	| id { $$ = $1; }
+	| ID {
+		strcpy(temp_string, $1);
+		variable_found = 0;
+		for(i = 0; i < count; i++)
+		{
+			if(strcmp(symbol_table[i].name, temp_string) == 0)
+			{
+				node *temp_node;
+				if(symbol_table[i].dt == INT)
+				{
+					char *temp = (char*)malloc(sizeof(char) * 10);
+					sprintf(temp, "%d", symbol_table[i].iValue); 
+					$$ = mknode(0, 0, temp);
+				}
+				else
+					$$ = mknode(0, 0, symbol_table[i].sValue);
+				variable_found = 1;
+				break;
+			}
+		}
+		if(!variable_found)
+		{
+			printf("Variable %s not defined. Stopping the execution\n", temp_string);
+			exit(1);
+		}
+    }
 	;
 
-PrintFunc: PRINT OCB T CCB NEWLINE start { $$ = mknode($3, 0, "Print"); printtree($$); printf("\n"); }
-   | PRINT OCB Expr1 CCB NEWLINE start { $$ = mknode($3, 0, "Print"); printtree($$); printf("\n"); }
+PrintFunc: PRINT OCB E CCB NEWLINE start { $$ = mknode($3, 0, "Print"); printtree($$); printf("\n"); }
    ;
 
 %%
