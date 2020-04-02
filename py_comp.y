@@ -27,15 +27,22 @@
 
 	node *mknode(char *token, int noOfChildren, ...)
 	{
+		if(strcmp(token, "BeginBlock") == 0)
+		{
+			printf("Building AST for if\n");
+		}
 		int i;
 		node *newnode = (node *)malloc(sizeof(node));
 		char *newstr = (char *)malloc(strlen(token)+1);
+		newnode -> noOfChildren = noOfChildren;
 		strcpy(newstr, token);
 		va_list params;
 		newnode -> children = (node**)malloc(sizeof(node*) * noOfChildren);
 		va_start(params, noOfChildren);
 		for(i = 0; i < noOfChildren; i++)
+		{
 			newnode -> children[i] = va_arg(params, node*);
+		}
 		newnode->token = newstr;
 		va_end(params);
 		return(newnode); 
@@ -43,7 +50,12 @@
 
 	void printtree(node *tree)
 	{
-		return;
+		
+		printf("token: %s\n", tree -> token);
+		for(int i = 0; i < tree -> noOfChildren; i++)
+		{
+			printtree(tree -> children[i]);
+		}
 	}
 
 	int count = 0, i, temp_integer, variable_found = 0, int_or_str;
@@ -61,19 +73,19 @@
 %token FOR WHILE
 %token IF IN RANGE ELSE PRINT COLON 
 %token NUM ID ASS
-%token TAB OCB CCB NEWLINE INDENT
+%token TAB OCB CCB NEWLINE INDENT DD ND
 %token TRUE COMMA FALSE STRING
 %token ADDITION SUBTRACT MULTIPLY DIVIDE NOT
 
 %union 	{
-	int iVal;
+	int iVal, depth;
 	char *txt;
 	struct ASTNode *NODE;
 }
 
 %type <txt> ID STRING
 %type <iVal> NUM
-%type <NODE> id Assignment1 T E if_stmt while_stmt for_stmt RangeElements condition bool_exp bool_factor bool_term start PrintFunc
+%type <NODE> id Assignment1 T E if_stmt main_start suite start_suite end_suite while_stmt for_stmt RangeElements condition bool_exp bool_factor bool_term start PrintFunc
  
 %right '='
 %left AND OR
@@ -82,9 +94,10 @@
 %left MULTIPLY DIVIDE
  
 %%
- 
-start: Assignment1
-   | INDENT Assignment1 
+
+main_start: start  {$$ = mknode("start", 1, $1); printtree($$);} 
+
+start: Assignment1 start { if($2 -> token == NULL) $$ = mknode("node", 1, $1); else $$ = mknode("node", 2, $1, $2); }
    | if_stmt {$$ = $1;}
    | while_stmt {$$ = $1;}
    | for_stmt {$$ = $1;}
@@ -92,7 +105,15 @@ start: Assignment1
    |
    ;
 
-if_stmt : IF bool_exp COLON NEWLINE INDENT start { $$ = mknode("If", 2, $2, $6); printtree($$); printf("\n"); }
+if_stmt: IF bool_exp COLON NEWLINE INDENT start_suite { $$ = mknode("If", 2, $2, $6); printf("\n"); }
+
+start_suite: start suite { $$ = mknode("BeginBlock", 2, $1, $2); printf("BeginBlock done\n");}
+
+suite: ND start suite { $$ = mknode("Next", 2, $2, $3); }
+	| end_suite { $$ = $1; };
+
+end_suite: start { $$ = mknode("EndBlock", 0); }
+	| DD start { $$ = mknode("EndBlock", 1, $2); }
 
 while_stmt : WHILE bool_exp COLON NEWLINE INDENT start {$$ = mknode("While", 2, $2, $6); printtree($$); printf("\n");}
 
@@ -115,19 +136,18 @@ bool_exp : bool_term OR bool_term {$$ = mknode($1, $3, "Or");}
          | bool_term {$$=$1;}; 
 
 bool_term : bool_factor {$$ = $1;}
-          | TRUE {$$ = mknode(0, 0, "True");}
-          | FALSE {$$ = mknode(0, 0, "False");}; 
+          | TRUE {$$ = mknode("True", 0);}
+          | FALSE {$$ = mknode("False", 0);}; 
           
 bool_factor : NOT bool_factor {$$ = mknode($2, 0, "!");}
             | OCB bool_exp CCB {$$ = $2;}; 
 
-Assignment1: id ASS E NEWLINE start
+Assignment1: id ASS E NEWLINE
 							{
                             	if(int_or_str == 1)
 								{
 									$$ = mknode("=", 2, $1, $3);
 									search_update_int(symbol_table, $1 -> token, atoi($3 -> token), INT);
-									printtree($$);
 									printf("\n");
 								}
 								else if(int_or_str == STR)
@@ -141,7 +161,7 @@ Assignment1: id ASS E NEWLINE start
 	| error {yyerrok; yyclearin;}
     ;
 
-id: ID { $$ = mknode((char*)yylval.txt, 2, 0, 0); }
+id: ID { $$ = mknode((char*)yylval.txt, 0); }
 	;
  
 E:  E ADDITION T 
@@ -152,19 +172,19 @@ E:  E ADDITION T
 
 	| E SUBTRACT T 
 	{
-		$$ = mknode($1, $3, "-");
+		$$ = mknode("-", 2, $1, $3);
 		int_or_str = INT;
 	}
 
 	| E MULTIPLY T 
 	{
-		$$ = mknode($1, $3, "*");
+		$$ = mknode("*", 2, $1, $3);
 		int_or_str = INT;
 	}
 
 	| E DIVIDE T 
 	{
-		$$ = mknode($1, $3, "/");
+		$$ = mknode("/", 2, $1, $3);
 		int_or_str = INT;
 	}
 
@@ -178,7 +198,7 @@ T : NUM
 	{ 
 		char *temp = (char*)malloc(sizeof(char) * 10);
 		sprintf(temp, "%d", yylval.iVal); 
-		$$ = mknode(temp, 2, 0, 0);
+		$$ = mknode(temp, 0);
 		int_or_str = INT;
 	}
 
@@ -188,7 +208,7 @@ T : NUM
 	{
 		char *temp = (char*)malloc(sizeof(char) * 50);
 		sprintf(temp, "%s", yylval.txt); 
-		$$ = mknode(temp, 2, 0, 0);	
+		$$ = mknode(temp, 0);	
 		int_or_str = STR;
 	}
 
@@ -204,10 +224,10 @@ T : NUM
 				{
 					char *temp = (char*)malloc(sizeof(char) * 10);
 					sprintf(temp, "%d", symbol_table[i].iValue); 
-					$$ = mknode(temp, 2, 0, 0);
+					$$ = mknode(temp, 0);
 				}
 				else
-					$$ = mknode(symbol_table[i].sValue, 2, 0, 0);
+					$$ = mknode(symbol_table[i].sValue, 0);
 				variable_found = 1;
 				break;
 			}
@@ -324,5 +344,5 @@ int main(int argc, char *argv[])
 int yyerror(char *s)
 {
    printf("%s at line %d\n", s, yylineno);
-   return 1;
+   exit(1);
 }

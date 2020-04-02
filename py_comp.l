@@ -1,11 +1,31 @@
 %{
 	#include "y.tab.h"
 	void recover();
+	int depth = 0, curr_depth;
 %}
 
 %%
 
-[\t]+				 {printf("T_INDENT "); return (INDENT);}
+[\t]*	{
+			curr_depth = strlen(yytext);
+			if(curr_depth > depth)
+			{
+				printf("T_INDENT ");
+				depth = curr_depth;
+				return INDENT;
+			}
+			else if(curr_depth < depth)
+			{
+				printf("T_DEDENT ");
+				depth = curr_depth;
+				return DD;
+			}
+			else if(curr_depth == depth)
+			{
+				printf("T_ND ");
+				return ND;
+			}
+		}
 [ ]  				 {}
 [\n]				 {printf("\n"); yylineno++; return (NEWLINE);}
 if    				 {printf("T_IF "); return(IF);}
