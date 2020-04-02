@@ -115,9 +115,9 @@ suite: ND start suite { $$ = mknode("Next", 2, $2, $3); }
 end_suite: start { $$ = mknode("EndBlock", 0); }
 	| DD start { $$ = mknode("EndBlock", 1, $2); }
 
-while_stmt : WHILE bool_exp COLON NEWLINE INDENT start {$$ = mknode("While", 2, $2, $6); printtree($$); printf("\n");}
+while_stmt : WHILE bool_exp COLON NEWLINE INDENT start_suite {$$ = mknode("While", 2, $2, $6); printf("\n");}
 
-for_stmt : FOR condition COLON NEWLINE INDENT start {$$ = mknode("For", 2, $2, $6); printtree($$); printf("\n");}
+for_stmt : FOR condition COLON NEWLINE INDENT start_suite {$$ = mknode("For", 2, $2, $6); printf("\n");}
 
 RangeElements :	T {$$ = $1;}
    | T COMMA T {$$ = mknode(",", 2, $1, $3);}
@@ -125,14 +125,14 @@ RangeElements :	T {$$ = $1;}
 
 condition : id IN RANGE OCB RangeElements CCB {$$ = mknode("Condition", 2, $1, $5);}
 
-bool_exp : bool_term OR bool_term {$$ = mknode($1, $3, "Or");}
-         | E LT E {$$ = mknode($1, $3, "<");}
-         | bool_term AND bool_term {$$ = mknode($1, $3, "And");}
-         | E GT E {$$ = mknode($1, $3, ">");}
-	 	 | E EQ E {$$ = mknode($1, $3, "==");}
-         | E LE E {$$ = mknode($1, $3, "<=");}
-         | E GE E {$$ = mknode($1, $3, ">=");}
-         | E IN id { $$ = mknode(2, $1, "In");}
+bool_exp : bool_term OR bool_term {$$ = mknode("Or", 2, $1, $3);}
+         | E LT E {$$ = mknode("<", 2, $1, $3);}
+         | bool_term AND bool_term {$$ = mknode("And", 2, $1, $3);}
+         | E GT E {$$ = mknode(">", 2, $1, $3);}
+	 	 | E EQ E {$$ = mknode("==", 2, $1, $3);}
+         | E LE E {$$ = mknode("<=", 2,$1, $3);}
+         | E GE E {$$ = mknode(">=", 2, $1, $3);}
+         | E IN id { $$ = mknode("In", 2, $1);}
          | bool_term {$$=$1;}; 
 
 bool_term : bool_factor {$$ = $1;}
