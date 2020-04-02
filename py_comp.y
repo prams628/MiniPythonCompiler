@@ -3,6 +3,7 @@
    #include<stdlib.h>
    #include<string.h>
    #include<ctype.h>
+   #include <stdarg.h>
 
    #define INT 1
    #define STR 2
@@ -19,33 +20,30 @@
 
 	typedef struct ASTNode
 	{
-		struct ASTNode *left;
-		struct ASTNode *right;
+		int noOfChildren;
+		struct ASTNode **children;
 		char *token;
 	} node;
 
-	node *mknode(node *left, node *right, char *token)
+	node *mknode(char *token, int noOfChildren, ...)
 	{
+		int i;
 		node *newnode = (node *)malloc(sizeof(node));
 		char *newstr = (char *)malloc(strlen(token)+1);
 		strcpy(newstr, token);
-		newnode->left = left;
-		newnode->right = right;
+		va_list params;
+		newnode -> children = (node**)malloc(sizeof(node*) * noOfChildren);
+		va_start(params, noOfChildren);
+		for(i = 0; i < noOfChildren; i++)
+			newnode -> children[i] = va_arg(params, node*);
 		newnode->token = newstr;
+		va_end(params);
 		return(newnode); 
 	}
 
 	void printtree(node *tree)
 	{
-		if (tree->left || tree->right)
-			printf("(");
-		printf(" %s ", tree->token);
-		if (tree->left)
-			printtree(tree->left);
-		if (tree->right)
-			printtree(tree->right);
-		if (tree->left || tree->right)
-			printf(")");
+		return;
 	}
 
 	int count = 0, i, temp_integer, variable_found = 0, int_or_str;
@@ -85,8 +83,8 @@
  
 %%
  
-start: Assignment1 start
-   | INDENT Assignment1 start
+start: Assignment1
+   | INDENT Assignment1 
    | if_stmt {$$ = $1;}
    | while_stmt {$$ = $1;}
    | for_stmt {$$ = $1;}
@@ -94,17 +92,17 @@ start: Assignment1 start
    |
    ;
 
-if_stmt : IF bool_exp COLON NEWLINE INDENT start { $$ = mknode($2, $6, "If"); printtree($$); printf("\n"); }
+if_stmt : IF bool_exp COLON NEWLINE INDENT start { $$ = mknode("If", 2, $2, $6); printtree($$); printf("\n"); }
 
-while_stmt : WHILE bool_exp COLON NEWLINE INDENT start {$$ = mknode($2, $6, "While"); printtree($$); printf("\n");}
+while_stmt : WHILE bool_exp COLON NEWLINE INDENT start {$$ = mknode("While", 2, $2, $6); printtree($$); printf("\n");}
 
-for_stmt : FOR condition COLON NEWLINE INDENT start {$$ = mknode($2, $6, "For"); printtree($$); printf("\n");}
+for_stmt : FOR condition COLON NEWLINE INDENT start {$$ = mknode("For", 2, $2, $6); printtree($$); printf("\n");}
 
 RangeElements :	T {$$ = $1;}
-   | T COMMA T {$$ = mknode($1, $3, ",");}
+   | T COMMA T {$$ = mknode(",", 2, $1, $3);}
    ;
 
-condition : id IN RANGE OCB RangeElements CCB {$$ = mknode($1, $5, "Condition");}
+condition : id IN RANGE OCB RangeElements CCB {$$ = mknode("Condition", 2, $1, $5);}
 
 bool_exp : bool_term OR bool_term {$$ = mknode($1, $3, "Or");}
          | E LT E {$$ = mknode($1, $3, "<");}
@@ -123,18 +121,18 @@ bool_term : bool_factor {$$ = $1;}
 bool_factor : NOT bool_factor {$$ = mknode($2, 0, "!");}
             | OCB bool_exp CCB {$$ = $2;}; 
 
-Assignment1: id ASS E NEWLINE 
+Assignment1: id ASS E NEWLINE start
 							{
                             	if(int_or_str == 1)
 								{
-									$$ = mknode($1, $3, "=");
+									$$ = mknode("=", 2, $1, $3);
 									search_update_int(symbol_table, $1 -> token, atoi($3 -> token), INT);
 									printtree($$);
 									printf("\n");
 								}
 								else if(int_or_str == STR)
 								{
-									$$ = mknode($1, $3, "=");
+									$$ = mknode("=", 2, $1, $3);
 									search_update_str(symbol_table, $1 -> token, $3 -> token, STR);
 									printtree($$);
 									printf("\n");
@@ -143,12 +141,12 @@ Assignment1: id ASS E NEWLINE
 	| error {yyerrok; yyclearin;}
     ;
 
-id: ID { $$ = mknode(0, 0, (char*)yylval.txt); }
+id: ID { $$ = mknode((char*)yylval.txt, 2, 0, 0); }
 	;
  
 E:  E ADDITION T 
 	{
-		$$ = mknode($1, $3, "+");
+		$$ = mknode("+", 2, $1, $3);
 		int_or_str = INT;
 	}
 
@@ -180,7 +178,7 @@ T : NUM
 	{ 
 		char *temp = (char*)malloc(sizeof(char) * 10);
 		sprintf(temp, "%d", yylval.iVal); 
-		$$ = mknode(0, 0, temp);
+		$$ = mknode(temp, 2, 0, 0);
 		int_or_str = INT;
 	}
 
@@ -190,7 +188,7 @@ T : NUM
 	{
 		char *temp = (char*)malloc(sizeof(char) * 50);
 		sprintf(temp, "%s", yylval.txt); 
-		$$ = mknode(0, 0, temp);	
+		$$ = mknode(temp, 2, 0, 0);	
 		int_or_str = STR;
 	}
 
@@ -206,10 +204,10 @@ T : NUM
 				{
 					char *temp = (char*)malloc(sizeof(char) * 10);
 					sprintf(temp, "%d", symbol_table[i].iValue); 
-					$$ = mknode(0, 0, temp);
+					$$ = mknode(temp, 2, 0, 0);
 				}
 				else
-					$$ = mknode(0, 0, symbol_table[i].sValue);
+					$$ = mknode(symbol_table[i].sValue, 2, 0, 0);
 				variable_found = 1;
 				break;
 			}
