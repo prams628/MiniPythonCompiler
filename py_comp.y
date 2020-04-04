@@ -12,6 +12,7 @@
    #define RELOP 12
    #define IDENTIFIER 13
    #define STIRNG 14
+   #define TRUTH 15
    #define NONE 20
  
    struct sym_table_entry
@@ -64,6 +65,7 @@
 	int count = 0, i, temp_variable_count = 0, temp_integer, variable_found = 0, int_or_str;
 	char temp_string[100];
 	extern int yylineno;
+	int label_count_proposed = 0, label_count_actual = 0;
 
 	char snum[10];
 	char T[] = "T";
@@ -72,18 +74,22 @@
 	{
 		if(tree)
 		{	
-			printf("Current tree token: %s\n", tree -> token);
+			
 			if(strcmp("node", tree -> token) == 0)
 			{
-				node *current_tree = tree -> children[0];
+				node *current_tree = (node*)malloc(sizeof(node));
+				current_tree = tree -> children[0];
 				printICG(current_tree -> children[1]);
 				printf("%s = T%d\n", current_tree -> children[0] -> token, temp_variable_count++);
+				free(current_tree);
 				printICG(tree -> children[1]);
 			}
+
 			if(tree -> type == NUMBER || tree -> type == IDENTIFIER)
 			{
 				printf("T%d = %s\n", temp_variable_count, tree -> token);
 			}
+
 			if(tree -> type == BINARY)
 			{
 				printICG(tree -> children[0]);
@@ -92,10 +98,39 @@
 				char T[] = "T";
 				printf("T%d = %s %s %s\n", temp_variable_count,strcat(T, snum) , tree -> token, tree -> children[1] -> token);
 			}
+
 			if(strcmp("If", tree -> token) == 0)
 			{
-				printf("Detected if statement. Under production\n");
-				exit(1);
+				printICG(tree -> children[0]);
+				printf("IfFalse T%d goto L%d\n", temp_variable_count++, label_count_proposed++);
+				label_count_actual = label_count_proposed;
+				printICG(tree -> children[1]);
+			}
+
+			if(strcmp("While", tree -> token) == 0)
+			{
+				printf("L%d:\n", label_count_actual);
+				printICG(tree -> children[0]);
+				label_count_proposed++;
+				printf("IfFalse T%d goto L%d\n", temp_variable_count++, label_count_proposed++);
+				label_count_actual = label_count_proposed;
+				printICG(tree -> children[1]);
+				printf("goto L%d:\n", label_count_actual - 1);
+			}
+
+			if(tree -> type == TRUTH)
+				printf("T%d = %s\n", temp_variable_count, tree -> token);
+			if(tree -> type == RELOP)
+				printf("T%d = %s %s %s\n", temp_variable_count, tree -> children[0] -> token, tree -> token, tree -> children[1] -> token);
+			if(strcmp(tree -> token, "BeginBlock") == 0 || strcmp(tree -> token, "Next") == 0)
+			{
+				printICG(tree -> children[0]);
+				printICG(tree -> children[1]);
+			}
+			if(strcmp(tree -> token, "EndBlock") == 0)
+			{
+				printf("L%d:\n", --label_count_actual);
+				printICG(tree -> children[0]);
 			}
 		}
 	}
@@ -138,6 +173,7 @@ main_start: start  {
 			printtree($1); 
 			printf("\n------------------ICG---------------------\n");
 			printICG($1);
+			printf("\n");
 		} 
 
 start: Assignment1 start { if($2 -> token == NULL) $$ = mknode("node", NONE, 1, $1); else $$ = mknode("node", NONE, 2, $1, $2); }
@@ -179,8 +215,8 @@ bool_exp : bool_term OR bool_term {$$ = mknode("Or", RELOP, 2, $1, $3);}
          | bool_term {$$=$1;}; 
 
 bool_term : bool_factor {$$ = $1;}
-          | TRUE {$$ = mknode("True", NONE, 0);}
-          | FALSE {$$ = mknode("False", NONE, 0);}; 
+          | TRUE {$$ = mknode("True", TRUTH, 0);}
+          | FALSE {$$ = mknode("False", TRUTH, 0);}; 
           
 bool_factor : NOT bool_factor {$$ = mknode("!", NONE, 1, $2);}
             | OCB bool_exp CCB {$$ = $2;}; 
@@ -260,14 +296,7 @@ T : NUM
 			if(strcmp(symbol_table[i].name, temp_string) == 0)
 			{
 				node *temp_node;
-				if(symbol_table[i].dt == INT)
-				{
-					char *temp = (char*)malloc(sizeof(char) * 10);
-					sprintf(temp, "%d", symbol_table[i].iValue); 
-					$$ = mknode(temp, IDENTIFIER, 0);
-				}
-				else
-					$$ = mknode(symbol_table[i].sValue, IDENTIFIER, 0);
+				$$ = mknode(symbol_table[i].name, IDENTIFIER, 0);
 				variable_found = 1;
 				break;
 			}

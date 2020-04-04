@@ -1,6 +1,4 @@
 x = 10 * 30 / 10 * 40
 y = 20
-while 15 < 20:
-	for i in range(10, 10):
-		if ( x < 20):
-			k = 7
+while ( x < 20):
+		k = 7
