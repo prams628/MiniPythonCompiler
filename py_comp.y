@@ -65,6 +65,9 @@
 	char temp_string[100];
 	extern int yylineno;
 
+	char snum[10];
+	char T[] = "T";
+
 	void printICG(node *tree)
 	{
 		if(tree)
@@ -83,7 +86,11 @@
 			}
 			if(tree -> type == BINARY)
 			{
-				printf("T%d = %s %s %s\n", temp_variable_count, tree -> children[0] -> token, tree -> token, tree -> children[0] -> token);
+				printICG(tree -> children[0]);
+				sprintf(snum, "%d", temp_variable_count);
+				temp_variable_count++;
+				char T[] = "T";
+				printf("T%d = %s %s %s\n", temp_variable_count,strcat(T, snum) , tree -> token, tree -> children[1] -> token);
 			}
 			if(strcmp("If", tree -> token) == 0)
 			{
