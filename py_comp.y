@@ -68,16 +68,27 @@
 	void printICG(node *tree)
 	{
 		if(tree)
-		{
+		{	
+			printf("Current tree token: %s\n", tree -> token);
 			if(strcmp("node", tree -> token) == 0)
 			{
-				tree = tree -> children[0];
+				node *current_tree = tree -> children[0];
+				printICG(current_tree -> children[1]);
+				printf("%s = T%d\n", current_tree -> children[0] -> token, temp_variable_count++);
 				printICG(tree -> children[1]);
-				printf("%s = T%d\n", tree -> children[0] -> token, temp_variable_count++);
 			}
-			else if(tree -> type == NUMBER || tree -> type == IDENTIFIER)
+			if(tree -> type == NUMBER || tree -> type == IDENTIFIER)
 			{
 				printf("T%d = %s\n", temp_variable_count, tree -> token);
+			}
+			if(tree -> type == BINARY)
+			{
+				printf("T%d = %s %s %s\n", temp_variable_count, tree -> children[0] -> token, tree -> token, tree -> children[0] -> token);
+			}
+			if(strcmp("If", tree -> token) == 0)
+			{
+				printf("Detected if statement. Under production\n");
+				exit(1);
 			}
 		}
 	}
@@ -116,12 +127,10 @@
 %%
 
 main_start: start  {
-			$$ = mknode("start", NONE, 1, $1); 
-			printf("------------------AST---------------------\n");
-			printtree($$); 
-			printf("------------------ICG---------------------\n");
-			printICG($$ -> children[0]);
-			printf("------------------------------------------\n");
+			printf("\n------------------AST---------------------\n");
+			printtree($1); 
+			printf("\n------------------ICG---------------------\n");
+			printICG($1);
 		} 
 
 start: Assignment1 start { if($2 -> token == NULL) $$ = mknode("node", NONE, 1, $1); else $$ = mknode("node", NONE, 2, $1, $2); }
@@ -356,10 +365,7 @@ void display(struct sym_table_entry table[])
 
 int main(int argc, char *argv[])
 {
-   if(yyparse()==1)
-       printf("Parsing failed\n");
-      else
-       printf("Parsing completed successfully\n");
+	yyparse();
 	printf("-----------------Symbol table-----------------\n");
 	display(symbol_table);
    return 0;
