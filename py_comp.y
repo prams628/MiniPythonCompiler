@@ -74,6 +74,8 @@
 	extern int yylineno;
 	int label_count_proposed = 0, label_count_actual = 0;
 	int for_loop_counter = 0;
+	int while_loop_counter = 0;
+	int next_counter = 0;
 
 	char snum[10];
 	char T[] = "T";
@@ -117,20 +119,24 @@
 
 			if(strcmp("While", tree -> token) == 0)
 			{
-				printf("L%d:\n", label_count_actual);
+				printf("while%d:\n", while_loop_counter++);
 				printICG(tree -> children[0]);
 				label_count_proposed++;
-				printf("IfFalse T%d goto L%d\n", temp_variable_count++, label_count_proposed++);
+				printf("IfFalse T%d goto next%d:\n", temp_variable_count++, label_count_proposed++, next_counter++);
 				label_count_actual = label_count_proposed;
 				printICG(tree -> children[1]);
-				printf("goto L%d:\n", label_count_actual - 1);
+				printf("goto while%d\n", --while_loop_counter);
+				printf("next%d:\n", --next_counter);
 			}
 			if(strcmp("For", tree -> token) == 0)
 			{
+				next_counter++;
 				node *condition = tree -> children[0];
 				int start_index = 0, end_index, step_index = 1;
+
 				if(condition -> children[1] -> noOfChildren == 1)
-					end_index = atoi(condition -> children[1] -> children[0] -> token);
+					{end_index = atoi(condition -> children[1] -> children[0] -> token);}
+				
 				else if(condition -> children[1] -> noOfChildren == 2)
 				{
 					start_index = atoi(condition -> children[1] -> children[0] -> token);
@@ -142,14 +148,25 @@
 					end_index = atoi(condition -> children[1] -> children[1] -> token);
 					step_index = atoi(condition -> children[1] -> children[2] -> token);
 				}
+
 				printf("for%d_step = %d\n", for_loop_counter ,step_index);
 				printf("for%d_stop = %d\n", for_loop_counter, end_index);
 				printf("%s = %d\n", condition -> children[0] -> token, start_index);
 				search_update_int(symbol_table, condition -> children[0] -> token, start_index, INT);
 				printf("for%d:\n", for_loop_counter++);
-				printf("IfFalse %s < %d goto L%d:\n", condition -> children[0] -> token, end_index, label_count_proposed++);
+				printf("IfFalse %s < %d goto next%d:\n", condition -> children[0] -> token, end_index, next_counter);
+				printf("T%d = %s + 1\n", temp_variable_count++, condition -> children[0] -> token);
+				printf("%s = T%d\n",condition -> children[0] -> token, --temp_variable_count);
+				for(int i = start_index; i < end_index; i += step_index)
+				{
+					start_index++;
+					search_update_int(symbol_table, condition -> children[0] -> token, start_index, INT);
+				}
+				label_count_actual++;
 				printICG(tree -> children[1]);
 				printf("goto for%d\n", --for_loop_counter);
+				printf("next%d:\n", next_counter);
+				
 			}
 			if(tree -> type == TRUTH)
 				printf("T%d = %s\n", temp_variable_count, tree -> token);
