@@ -1,4 +1,4 @@
-x = 10 * 30 / 10 * 40
-y = 20
-while ( x < 20):
-		k = 7
+a = 1
+for i in range(10, 100, 2):
+	for j in range(100):
+		print(j)

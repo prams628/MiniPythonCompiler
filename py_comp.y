@@ -62,10 +62,18 @@
 		}
 	}
 
+	// Some function definitions required
+	void add_int(struct sym_table_entry[], char[], int, int);
+	void add_str(struct sym_table_entry[], char[], char[], int);
+	void display(struct sym_table_entry[]);
+	void search_update_int(struct sym_table_entry[], char[], int, int);
+	void search_update_str(struct sym_table_entry[], char[], char[], int);
+
 	int count = 0, i, temp_variable_count = 0, temp_integer, variable_found = 0, int_or_str;
 	char temp_string[100];
 	extern int yylineno;
 	int label_count_proposed = 0, label_count_actual = 0;
+	int for_loop_counter = 0;
 
 	char snum[10];
 	char T[] = "T";
@@ -117,7 +125,32 @@
 				printICG(tree -> children[1]);
 				printf("goto L%d:\n", label_count_actual - 1);
 			}
-
+			if(strcmp("For", tree -> token) == 0)
+			{
+				node *condition = tree -> children[0];
+				int start_index = 0, end_index, step_index = 1;
+				if(condition -> children[1] -> noOfChildren == 1)
+					end_index = atoi(condition -> children[1] -> children[0] -> token);
+				else if(condition -> children[1] -> noOfChildren == 2)
+				{
+					start_index = atoi(condition -> children[1] -> children[0] -> token);
+					end_index = atoi(condition -> children[1] -> children[1] -> token);
+				}
+				else
+				{
+					start_index = atoi(condition -> children[1] -> children[0] -> token);
+					end_index = atoi(condition -> children[1] -> children[1] -> token);
+					step_index = atoi(condition -> children[1] -> children[2] -> token);
+				}
+				printf("for%d_step = %d\n", for_loop_counter ,step_index);
+				printf("for%d_stop = %d\n", for_loop_counter, end_index);
+				printf("%s = %d\n", condition -> children[0] -> token, start_index);
+				search_update_int(symbol_table, condition -> children[0] -> token, start_index, INT);
+				printf("for%d:\n", for_loop_counter++);
+				printf("IfFalse %s < %d goto L%d:\n", condition -> children[0] -> token, end_index, label_count_proposed++);
+				printICG(tree -> children[1]);
+				printf("goto for%d\n", --for_loop_counter);
+			}
 			if(tree -> type == TRUTH)
 				printf("T%d = %s\n", temp_variable_count, tree -> token);
 			if(tree -> type == RELOP)
@@ -132,15 +165,12 @@
 				printf("L%d:\n", --label_count_actual);
 				printICG(tree -> children[0]);
 			}
+			if(strcmp(tree -> token, "Print") == 0)
+			{
+				printf("print %s\n", tree -> children[0] -> token);
+			}
 		}
 	}
-
-	// Some function definitions required
-	void add_int(struct sym_table_entry[], char[], int, int);
-	void add_str(struct sym_table_entry[], char[], char[], int);
-	void display(struct sym_table_entry[]);
-	void search_update_int(struct sym_table_entry[], char[], int, int);
-	void search_update_str(struct sym_table_entry[], char[], char[], int);
 %}
  
 %token FOR WHILE
@@ -198,11 +228,14 @@ while_stmt : WHILE bool_exp COLON NEWLINE INDENT start_suite {$$ = mknode("While
 
 for_stmt : FOR condition COLON NEWLINE INDENT start_suite {$$ = mknode("For", NONE, 2, $2, $6); printf("\n");}
 
-RangeElements :	T {$$ = $1;}
+RangeElements :	T {$$ = mknode(",", NONE, 1, $1);;}
    | T COMMA T {$$ = mknode(",", NONE, 2, $1, $3);}
+   | T COMMA T COMMA T { $$ = mknode(",", NONE, 3, $1, $3, $5); }
    ;
 
-condition : id IN RANGE OCB RangeElements CCB {$$ = mknode("Condition", NONE, 2, $1, $5);}
+condition : id IN RANGE OCB RangeElements CCB {
+		search_update_int(symbol_table, $1 -> token, 0, INT);
+		$$ = mknode("Condition", NONE, 2, $1, $5);}
 
 bool_exp : bool_term OR bool_term {$$ = mknode("Or", RELOP, 2, $1, $3);}
          | E LT E {$$ = mknode("<", RELOP, 2, $1, $3);}
@@ -325,6 +358,7 @@ void search_update_int(struct sym_table_entry table[],char name[], int value, in
 		{
 			if(table[i].dt == INT)
 			{
+				table[i].iValue = value;
 				return;
 			}
 			else
@@ -393,9 +427,9 @@ void display(struct sym_table_entry table[])
 	for(i = 0; i < count; i++)
 	{
 		if(table[i].dt == INT)
-			printf("%s INT %d %s %d\n", table[i].name, table[i].iValue, table[i].type, table[i].lineno);
+			printf("%s INT %d %s\n", table[i].name, table[i].iValue, table[i].type);
 		else
-			printf("%s STR %s %s %d\n", table[i].name, table[i].sValue, table[i].type, table[i].lineno);
+			printf("%s STR %s %s\n", table[i].name, table[i].sValue, table[i].type);
 	}
 }
 
