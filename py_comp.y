@@ -1,12 +1,14 @@
 %{
-   #include<stdio.h>
-   #include<stdlib.h>
    #include<string.h>
-   #include<ctype.h>
+   #include <ctype.h>
    #include <stdarg.h>
+   #include "stack.h"
 
    #define INT 1
    #define STR 2
+   #define for_loop 3
+   #define while_loop 4
+   #define if_statement 5
    #define BINARY 10
    #define NUMBER 11
    #define RELOP 12
@@ -75,7 +77,7 @@
 	int label_count_proposed = 0, label_count_actual = 0;
 	int for_loop_counter = 0;
 	int while_loop_counter = 0;
-	int next_counter = 0;
+	int next_counter = 0, loop_stack[10];
 
 	char snum[10];
 	char T[] = "T";
@@ -111,6 +113,7 @@
 
 			if(strcmp("If", tree -> token) == 0)
 			{
+				push_to_stack(loop_stack, if_statement);
 				printICG(tree -> children[0]);
 				printf("IfFalse T%d goto L%d\n", temp_variable_count++, label_count_proposed++);
 				label_count_actual = label_count_proposed;
@@ -119,44 +122,44 @@
 
 			if(strcmp("While", tree -> token) == 0)
 			{
+				push_to_stack(loop_stack, while_loop);
 				printf("while%d:\n", while_loop_counter++);
 				printICG(tree -> children[0]);
 				label_count_proposed++;
 				printf("IfFalse T%d goto next%d:\n", temp_variable_count++, label_count_proposed++, next_counter++);
 				label_count_actual = label_count_proposed;
 				printICG(tree -> children[1]);
-				printf("goto while%d\n", --while_loop_counter);
-				printf("next%d:\n", --next_counter);
 			}
 			if(strcmp("For", tree -> token) == 0)
 			{
+				push_to_stack(loop_stack, for_loop);
 				next_counter++;
 				node *condition = tree -> children[0];
-				int start_index = 0, end_index, step_index = 1;
+				int start_index = -1, end_index, step_index = 1;
 
 				if(condition -> children[1] -> noOfChildren == 1)
 					{end_index = atoi(condition -> children[1] -> children[0] -> token);}
 				
 				else if(condition -> children[1] -> noOfChildren == 2)
 				{
-					start_index = atoi(condition -> children[1] -> children[0] -> token);
+					start_index = atoi(condition -> children[1] -> children[0] -> token) - 1;
 					end_index = atoi(condition -> children[1] -> children[1] -> token);
 				}
 				else
 				{
-					start_index = atoi(condition -> children[1] -> children[0] -> token);
+					start_index = atoi(condition -> children[1] -> children[0] -> token) - 1;
 					end_index = atoi(condition -> children[1] -> children[1] -> token);
 					step_index = atoi(condition -> children[1] -> children[2] -> token);
 				}
 
 				printf("for%d_step = %d\n", for_loop_counter ,step_index);
 				printf("for%d_stop = %d\n", for_loop_counter, end_index);
-				printf("%s = %d\n", condition -> children[0] -> token, start_index);
+				printf("%s = %d\n", condition -> children[0] -> token, start_index);	
 				search_update_int(symbol_table, condition -> children[0] -> token, start_index, INT);
 				printf("for%d:\n", for_loop_counter++);
-				printf("IfFalse %s < %d goto next%d:\n", condition -> children[0] -> token, end_index, next_counter);
 				printf("T%d = %s + 1\n", temp_variable_count++, condition -> children[0] -> token);
 				printf("%s = T%d\n",condition -> children[0] -> token, --temp_variable_count);
+				printf("IfFalse %s < %d goto next%d:\n", condition -> children[0] -> token, end_index, next_counter);
 				for(int i = start_index; i < end_index; i += step_index)
 				{
 					start_index++;
@@ -164,9 +167,6 @@
 				}
 				label_count_actual++;
 				printICG(tree -> children[1]);
-				printf("goto for%d\n", --for_loop_counter);
-				printf("next%d:\n", next_counter);
-				
 			}
 			if(tree -> type == TRUTH)
 				printf("T%d = %s\n", temp_variable_count, tree -> token);
@@ -179,8 +179,20 @@
 			}
 			if(strcmp(tree -> token, "EndBlock") == 0)
 			{
-				printf("L%d:\n", --label_count_actual);
-				printICG(tree -> children[0]);
+				int top = pop_from_stack(loop_stack);
+				if(top == for_loop)
+				{
+					printf("goto for%d\n", --for_loop_counter);
+					printf("next%d:\n", next_counter);
+				}
+				else if(top == while_loop)
+				{
+					printf("goto while%d\n", --while_loop_counter);
+					printf("next%d:\n", --next_counter);
+				}
+				else if(top == if_statement)
+					printf("L%d:\n", --label_count_actual);
+					printICG(tree -> children[0]);
 			}
 			if(strcmp(tree -> token, "Print") == 0)
 			{
@@ -192,7 +204,7 @@
  
 %token FOR WHILE
 %token IF IN RANGE ELSE PRINT COLON 
-%token NUM ID ASS
+%token NUM ID ASS AND
 %token TAB OCB CCB NEWLINE INDENT DD ND
 %token TRUE COMMA FALSE STRING
 %token ADDITION SUBTRACT MULTIPLY DIVIDE NOT

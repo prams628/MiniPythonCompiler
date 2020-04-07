@@ -27,13 +27,13 @@
 			}
 		}
 [ ]  				 {}
-[\n]				 {printf("\n"); yylineno++; return (NEWLINE);}
-if    				 {printf("T_IF "); return(IF);}
-else  				 {printf("T_ELSE "); return(ELSE);}
-for   			 	 {printf("T_FOR "); return (FOR);}
-while 				 {printf("T_WHILE "); return(WHILE);}
+[\n]				 { curr_depth = 0; printf("\n"); yylineno++; return (NEWLINE);}
+if    				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_IF "); return(IF);}
+else  				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_ELSE "); return(ELSE);}
+for   			 	 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_FOR "); return (FOR);}
+while 				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_WHILE "); return(WHILE);}
 in    				 {printf("T_IN "); return(IN);}
-print				 {printf("T_PRINT "); return(PRINT);}
+print				 { if(depth == 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_PRINT "); return(PRINT);}
 range				 {printf("T_RANGE "); return (RANGE);}
 "+"					 { printf("T_PL "); return(ADDITION); }
 "-"					 { printf("T_MI "); return(SUBTRACT); }
@@ -58,6 +58,7 @@ False				 {printf("T_FALSE "); return FALSE;}
 						return(NUM);
 					 }
 [a-zA-Z_]([a-zA-Z_]|[0-9])*	 {
+								if(depth >= 1 && curr_depth == 0){ depth--; printf("T_DEDENT"); yyless(0); return DD; }
 								printf("T_ID ");
 								yylval.txt = strdup(yytext);
 								return ID;
