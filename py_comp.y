@@ -56,12 +56,12 @@
 
 	void printtree(node *tree)
 	{
-		
-		printf("token: %s\n", tree -> token);
+		printf("( %s", tree -> token);
 		for(int i = 0; i < tree -> noOfChildren; i++)
 		{
 			printtree(tree -> children[i]);
 		}
+		printf(" )");
 	}
 
 	// Some function definitions required
