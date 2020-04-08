@@ -155,16 +155,10 @@
 				printf("for%d_step = %d\n", for_loop_counter ,step_index);
 				printf("for%d_stop = %d\n", for_loop_counter, end_index);
 				printf("%s = %d\n", condition -> children[0] -> token, start_index);	
-				search_update_int(symbol_table, condition -> children[0] -> token, start_index, INT);
 				printf("for%d:\n", for_loop_counter++);
 				printf("T%d = %s + 1\n", temp_variable_count++, condition -> children[0] -> token);
 				printf("%s = T%d\n",condition -> children[0] -> token, --temp_variable_count);
 				printf("IfFalse %s < %d goto next%d:\n", condition -> children[0] -> token, end_index, next_counter);
-				for(int i = start_index; i < end_index; i += step_index)
-				{
-					start_index++;
-					search_update_int(symbol_table, condition -> children[0] -> token, start_index, INT);
-				}
 				label_count_actual++;
 				printICG(tree -> children[1]);
 			}
