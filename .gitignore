@@ -1,12 +1,9 @@
-*.h
+y.tab.h
 
-mock_python_file.py
-test.py
+*.py
 
 *.c
 
 a.out
-
-To-Do List
 
 y.output

@@ -1,11 +1,21 @@
 %{
-   #include<stdio.h>
-   #include<stdlib.h>
    #include<string.h>
-   #include<ctype.h>
+   #include <ctype.h>
+   #include <stdarg.h>
+   #include "stack.h"
 
    #define INT 1
    #define STR 2
+   #define for_loop 3
+   #define while_loop 4
+   #define if_statement 5
+   #define BINARY 10
+   #define NUMBER 11
+   #define RELOP 12
+   #define IDENTIFIER 13
+   #define STIRNG 14
+   #define TRUTH 15
+   #define NONE 20
  
    struct sym_table_entry
 	{
@@ -17,9 +27,42 @@
 	};
 	struct sym_table_entry symbol_table[100];
 
-	int count = 0, temp_int, i, random_variable, variable_found = 0, int_or_str;
-	char temp_string[100];
-	extern int yylineno;
+	typedef struct ASTNode
+	{
+		int noOfChildren, type;
+		struct ASTNode **children;
+		char *token;
+	} node;
+
+	node *mknode(char *token, int type, int noOfChildren, ...)
+	{
+		int i;
+		node *newnode = (node *)malloc(sizeof(node));
+		char *newstr = (char *)malloc(strlen(token)+1);
+		newnode -> noOfChildren = noOfChildren;
+		strcpy(newstr, token);
+		va_list params;
+		newnode -> children = (node**)malloc(sizeof(node*) * noOfChildren);
+		va_start(params, noOfChildren);
+		for(i = 0; i < noOfChildren; i++)
+		{
+			newnode -> children[i] = va_arg(params, node*);
+		}
+		newnode->token = newstr;
+		va_end(params);
+		newnode -> type = type;
+		return(newnode); 
+	}
+
+	void printtree(node *tree)
+	{
+		printf("( %s", tree -> token);
+		for(int i = 0; i < tree -> noOfChildren; i++)
+		{
+			printtree(tree -> children[i]);
+		}
+		printf(" )");
+	}
 
 	// Some function definitions required
 	void add_int(struct sym_table_entry[], char[], int, int);
@@ -27,75 +70,289 @@
 	void display(struct sym_table_entry[]);
 	void search_update_int(struct sym_table_entry[], char[], int, int);
 	void search_update_str(struct sym_table_entry[], char[], char[], int);
+
+	int count = 0, i, temp_variable_count = 0, temp_integer, variable_found = 0, int_or_str;
+	char temp_string[100];
+	extern int yylineno;
+	int label_count_proposed = 0, label_count_actual = 0;
+	int for_loop_counter = 0;
+	int while_loop_counter = 0;
+	int next_counter = 0, loop_stack[10];
+
+	char snum[10];
+	char T[] = "T";
+
+	void printICG(node *tree)
+	{
+		if(tree)
+		{	
+			
+			if(strcmp("node", tree -> token) == 0)
+			{
+				node *current_tree = (node*)malloc(sizeof(node));
+				current_tree = tree -> children[0];
+				printICG(current_tree -> children[1]);
+				printf("%s = T%d\n", current_tree -> children[0] -> token, temp_variable_count++);
+				free(current_tree);
+				printICG(tree -> children[1]);
+			}
+
+			if(tree -> type == NUMBER || tree -> type == IDENTIFIER)
+			{
+				printf("T%d = %s\n", temp_variable_count, tree -> token);
+			}
+
+			if(tree -> type == BINARY)
+			{
+				printICG(tree -> children[0]);
+				sprintf(snum, "%d", temp_variable_count);
+				temp_variable_count++;
+				char T[] = "T";
+				printf("T%d = %s %s %s\n", temp_variable_count,strcat(T, snum) , tree -> token, tree -> children[1] -> token);
+			}
+
+			if(strcmp("If", tree -> token) == 0)
+			{
+				push_to_stack(loop_stack, if_statement);
+				printICG(tree -> children[0]);
+				printf("IfFalse T%d goto L%d\n", temp_variable_count++, label_count_proposed++);
+				label_count_actual = label_count_proposed;
+				printICG(tree -> children[1]);
+			}
+
+			if(strcmp("While", tree -> token) == 0)
+			{
+				push_to_stack(loop_stack, while_loop);
+				printf("while%d:\n", while_loop_counter++);
+				printICG(tree -> children[0]);
+				label_count_proposed++;
+				printf("IfFalse T%d goto next%d:\n", temp_variable_count++, label_count_proposed++, next_counter++);
+				label_count_actual = label_count_proposed;
+				printICG(tree -> children[1]);
+			}
+			if(strcmp("For", tree -> token) == 0)
+			{
+				push_to_stack(loop_stack, for_loop);
+				next_counter++;
+				node *condition = tree -> children[0];
+				int start_index = -1, end_index, step_index = 1;
+
+				if(condition -> children[1] -> noOfChildren == 1)
+					{end_index = atoi(condition -> children[1] -> children[0] -> token);}
+				
+				else if(condition -> children[1] -> noOfChildren == 2)
+				{
+					start_index = atoi(condition -> children[1] -> children[0] -> token) - 1;
+					end_index = atoi(condition -> children[1] -> children[1] -> token);
+				}
+				else
+				{
+					start_index = atoi(condition -> children[1] -> children[0] -> token) - 1;
+					end_index = atoi(condition -> children[1] -> children[1] -> token);
+					step_index = atoi(condition -> children[1] -> children[2] -> token);
+				}
+
+				printf("for%d_step = %d\n", for_loop_counter ,step_index);
+				printf("for%d_stop = %d\n", for_loop_counter, end_index);
+				printf("%s = %d\n", condition -> children[0] -> token, start_index);	
+				printf("for%d:\n", for_loop_counter++);
+				printf("T%d = %s + 1\n", temp_variable_count++, condition -> children[0] -> token);
+				printf("%s = T%d\n",condition -> children[0] -> token, --temp_variable_count);
+				printf("IfFalse %s < %d goto next%d:\n", condition -> children[0] -> token, end_index, next_counter);
+				label_count_actual++;
+				printICG(tree -> children[1]);
+			}
+			if(tree -> type == TRUTH)
+				printf("T%d = %s\n", temp_variable_count, tree -> token);
+			if(tree -> type == RELOP)
+				printf("T%d = %s %s %s\n", temp_variable_count, tree -> children[0] -> token, tree -> token, tree -> children[1] -> token);
+			if(strcmp(tree -> token, "BeginBlock") == 0 || strcmp(tree -> token, "Next") == 0)
+			{
+				printICG(tree -> children[0]);
+				printICG(tree -> children[1]);
+			}
+			if(strcmp(tree -> token, "EndBlock") == 0)
+			{
+				int top = pop_from_stack(loop_stack);
+				if(top == for_loop)
+				{
+					printf("goto for%d\n", --for_loop_counter);
+					printf("next%d:\n", next_counter);
+				}
+				else if(top == while_loop)
+				{
+					printf("goto while%d\n", --while_loop_counter);
+					printf("next%d:\n", --next_counter);
+				}
+				else if(top == if_statement)
+					printf("L%d:\n", --label_count_actual);
+					printICG(tree -> children[0]);
+			}
+			if(strcmp(tree -> token, "Print") == 0)
+			{
+				printf("print %s\n", tree -> children[0] -> token);
+			}
+		}
+	}
 %}
  
 %token FOR WHILE
 %token IF IN RANGE ELSE PRINT COLON 
-%token NUM ID 
-%token TAB OCB CCB NEWLINE INDENT
+%token NUM ID ASS AND
+%token TAB OCB CCB NEWLINE INDENT DD ND
 %token TRUE COMMA FALSE STRING
+%token ADDITION SUBTRACT MULTIPLY DIVIDE NOT
 
 %union 	{
-	int iVal;
+	int iVal, depth;
 	char *txt;
+	struct ASTNode *NODE;
 }
 
 %type <txt> ID STRING
-%type <iVal> NUM T
+%type <iVal> NUM
+%type <NODE> id Assignment1 T E if_stmt main_start suite start_suite end_suite while_stmt for_stmt RangeElements condition bool_exp bool_factor bool_term start PrintFunc
  
 %right '='
 %left AND OR
 %left LE GE EQ NE LT GT
-%left '+' '-'
-%left '*' '/'
+%left ADDITION SUBTRACT
+%left MULTIPLY DIVIDE
  
 %%
- 
-start: Assignment1 start
-   | CompoundStatement start
-   | INDENT Assignment1 start
-   | INDENT CompoundStatement start
-   | PrintFunc start
-   | INDENT PrintFunc start
+
+main_start: start  {
+			printf("\n------------------AST---------------------\n");
+			printtree($1); 
+			printf("\n------------------ICG---------------------\n");
+			printICG($1);
+			printf("\n");
+		} 
+
+start: Assignment1 start { if($2 -> token == NULL) $$ = mknode("node", NONE, 1, $1); else $$ = mknode("node", NONE, 2, $1, $2); }
+   | if_stmt {$$ = $1;}
+   | while_stmt {$$ = $1;}
+   | for_stmt {$$ = $1;}
+   | PrintFunc {$$ = $1;}
    |
    ;
 
-Assignment1: ID '=' E NEWLINE {
-                           if(int_or_str == 1)
-							   	search_update_int(symbol_table, $1, temp_int, INT);
-                           else
-                            	search_update_str(symbol_table, $1, temp_string, STR);
+if_stmt: IF bool_exp COLON NEWLINE INDENT start_suite { $$ = mknode("If", NONE, 2, $2, $6); printf("\n"); }
+
+start_suite: start suite { $$ = mknode("BeginBlock", NONE, 2, $1, $2); }
+
+suite: ND start suite { $$ = mknode("Next", NONE, 2, $2, $3); }
+	| end_suite { $$ = $1; };
+
+end_suite: start { $$ = mknode("EndBlock", NONE, 0); }
+	| DD start { $$ = mknode("EndBlock", NONE, 1, $2); }
+
+while_stmt : WHILE bool_exp COLON NEWLINE INDENT start_suite {$$ = mknode("While", NONE, 2, $2, $6); printf("\n");}
+
+for_stmt : FOR condition COLON NEWLINE INDENT start_suite {$$ = mknode("For", NONE, 2, $2, $6); printf("\n");}
+
+RangeElements :	T {$$ = mknode(",", NONE, 1, $1);;}
+   | T COMMA T {$$ = mknode(",", NONE, 2, $1, $3);}
+   | T COMMA T COMMA T { $$ = mknode(",", NONE, 3, $1, $3, $5); }
+   ;
+
+condition : id IN RANGE OCB RangeElements CCB {
+		search_update_int(symbol_table, $1 -> token, 0, INT);
+		$$ = mknode("Condition", NONE, 2, $1, $5);}
+
+bool_exp : bool_term OR bool_term {$$ = mknode("Or", RELOP, 2, $1, $3);}
+         | E LT E {$$ = mknode("<", RELOP, 2, $1, $3);}
+         | bool_term AND bool_term {$$ = mknode("And", RELOP, 2, $1, $3);}
+         | E GT E {$$ = mknode(">", RELOP, 2, $1, $3);}
+	 	 | E EQ E {$$ = mknode("==", RELOP, 2, $1, $3);}
+         | E LE E {$$ = mknode("<=", RELOP, 2, $1, $3);}
+         | E GE E {$$ = mknode(">=", RELOP, 2, $1, $3);}
+         | E IN id { $$ = mknode("In", RELOP, 2, $1);}
+         | bool_term {$$=$1;}; 
+
+bool_term : bool_factor {$$ = $1;}
+          | TRUE {$$ = mknode("True", TRUTH, 0);}
+          | FALSE {$$ = mknode("False", TRUTH, 0);}; 
+          
+bool_factor : NOT bool_factor {$$ = mknode("!", NONE, 1, $2);}
+            | OCB bool_exp CCB {$$ = $2;}; 
+
+Assignment1: id ASS E NEWLINE
+							{
+                            	if(int_or_str == 1)
+								{
+									$$ = mknode("=", NONE, 2, $1, $3);
+									search_update_int(symbol_table, $1 -> token, atoi($3 -> token), INT);
+								}
+								else if(int_or_str == STR)
+								{
+									$$ = mknode("=", NONE, 2, $1, $3);
+									search_update_str(symbol_table, $1 -> token, $3 -> token, STR);
+								}
 							}
 	| error {yyerrok; yyclearin;}
     ;
+
+id: ID { $$ = mknode((char*)yylval.txt, IDENTIFIER, 0); }
+	;
  
-E:  T 
-   {
-         temp_int = $1;
-         int_or_str = INT;
-   }
-   | STRING 
-   {
-      strcpy(temp_string, $1);
-      int_or_str = STR;
-   }
+E:  E ADDITION T 
+	{
+		$$ = mknode("+", BINARY, 2, $1, $3);
+		int_or_str = INT;
+	}
+
+	| E SUBTRACT T 
+	{
+		$$ = mknode("-", BINARY, 2, $1, $3);
+		int_or_str = INT;
+	}
+
+	| E MULTIPLY T 
+	{
+		$$ = mknode("*", BINARY, 2, $1, $3);
+		int_or_str = INT;
+	}
+
+	| E DIVIDE T 
+	{
+		$$ = mknode("/", BINARY, 2, $1, $3);
+		int_or_str = INT;
+	}
+
+	| T 
+    {
+		$$ = $1;
+   	}
 	;
   
-T :   T '+' T { $$ = $1 + $3; } 
-	| T '-' T { $$ = $1 - $3; } 
-	| T '*' T { $$ = $1 * $3; } 
-	| T '/' T { $$ = $1 / $3; } 
-	| '-' NUM { $$ = -$2; } 
-	| OCB T CCB { $$ = $2; } 
-	| NUM { $$ = $1; }
-    | ID {
+T : NUM 
+	{ 
+		char *temp = (char*)malloc(sizeof(char) * 10);
+		sprintf(temp, "%d", yylval.iVal); 
+		$$ = mknode(temp, NUMBER, 0);
+		int_or_str = INT;
+	}
+
+	| OCB E CCB {$$ = $2;}
+
+	| STRING
+	{
+		char *temp = (char*)malloc(sizeof(char) * 50);
+		sprintf(temp, "%s", yylval.txt); 
+		$$ = mknode(temp, STIRNG, 0);	
+		int_or_str = STR;
+	}
+
+	| ID {
 		strcpy(temp_string, $1);
 		variable_found = 0;
 		for(i = 0; i < count; i++)
 		{
 			if(strcmp(symbol_table[i].name, temp_string) == 0)
 			{
-				random_variable = symbol_table[i].iValue;
+				node *temp_node;
+				$$ = mknode(symbol_table[i].name, IDENTIFIER, 0);
 				variable_found = 1;
 				break;
 			}
@@ -105,56 +362,12 @@ T :   T '+' T { $$ = $1 + $3; }
 			printf("Variable %s not defined. Stopping the execution\n", temp_string);
 			exit(1);
 		}
-		else
-			$$ = random_variable;
     }
-	; 
- 
-CompoundStatement: IfStatement
-   | ForStatement
-   | WhileStatement
+	;
+
+PrintFunc: PRINT OCB E CCB NEWLINE start { $$ = mknode("Print", NONE, 1, $3); }
    ;
 
-IfStatement: IF condition COLON NEWLINE INDENT
-   ;
-
-ForStatement: FOR ID IN RANGE OCB RangeElements CCB COLON NEWLINE INDENT
-   ;
-
-WhileStatement: WHILE condition COLON NEWLINE INDENT
-   ;
-
-RangeElements:	Expr1
-   | Expr1 COMMA Expr1
-   | Expr1 COMMA Expr1 COMMA Expr1
-   ;
-
-condition: TRUE
-   | FALSE
-   | relationalExpression
-   ;
-
-relationalExpression: relationalExpression RelOp Expr1
-   | Expr1
-   ;
-
-Expr1: ID
-   | NUM
-   ;
-
-PrintFunc: PRINT OCB STRING CCB NEWLINE
-   | PRINT OCB Expr1 CCB NEWLINE
-   ;
-
-RelOp: LE 
-   | GE 
-   | EQ 
-   | NE 
-   | LT 
-   | GT
-   | AND
-   | OR
-   ;
 %%
 
 
@@ -168,6 +381,7 @@ void search_update_int(struct sym_table_entry table[],char name[], int value, in
 		{
 			if(table[i].dt == INT)
 			{
+				table[i].iValue = value;
 				return;
 			}
 			else
@@ -236,18 +450,16 @@ void display(struct sym_table_entry table[])
 	for(i = 0; i < count; i++)
 	{
 		if(table[i].dt == INT)
-			printf("%s INT %d %s %d\n", table[i].name, table[i].iValue, table[i].type, table[i].lineno);
+			printf("%s INT %d %s\n", table[i].name, table[i].iValue, table[i].type);
 		else
-			printf("%s STR %s %s %d\n", table[i].name, table[i].sValue, table[i].type, table[i].lineno);
+			printf("%s STR %s %s\n", table[i].name, table[i].sValue, table[i].type);
 	}
 }
 
 int main(int argc, char *argv[])
 {
-   if(yyparse()==1)
-       printf("Parsing failed\n");
-      else
-       printf("Parsing completed successfully\n");
+	yyparse();
+	printf("-----------------Symbol table-----------------\n");
 	display(symbol_table);
    return 0;
 }
@@ -255,5 +467,5 @@ int main(int argc, char *argv[])
 int yyerror(char *s)
 {
    printf("%s at line %d\n", s, yylineno);
-   return 1;
+   exit(1);
 }

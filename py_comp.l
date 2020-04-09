@@ -1,45 +1,71 @@
 %{
 	#include "y.tab.h"
 	void recover();
+	int depth = 0, curr_depth;
 %}
 
 %%
 
-[\t]+				 {printf("T_INDENT\n"); return (INDENT);}
+[\t]*	{
+			curr_depth = strlen(yytext);
+			if(curr_depth > depth)
+			{
+				printf("T_INDENT ");
+				depth = curr_depth;
+				return INDENT;
+			}
+			else if(curr_depth < depth)
+			{
+				printf("T_DEDENT ");
+				depth = curr_depth;
+				return DD;
+			}
+			else if(curr_depth == depth)
+			{
+				printf("T_ND ");
+				return ND;
+			}
+		}
 [ ]  				 {}
-[\n]				 {yylineno++; return (NEWLINE);}
-if    				 {printf("T_IF\n"); return(IF);}
-else  				 {printf("T_ELSE\n"); return(ELSE);}
-for   			 	 {printf("T_FOR\n"); return (FOR);}
-while 				 {printf("T_WHILE\n"); return(WHILE);}
-in    				 {printf("T_IN\n"); return(IN);}
-print				 {return(PRINT);}
-range				 {printf("T_RANGE\n"); return (RANGE);}
-","					 {printf("T_COMMA\n"); return (COMMA);}
-":"					 {printf("T_COLON\n"); return(COLON);}
-"("					 {printf("T_OCB\n"); return (OCB);}
-")"					 {printf("T_CCB\n"); return (CCB);}
-"=="    			 {printf("T_EQ\n"); return(EQ);}
-"<="    			 {printf("T_LE\n"); return(LE);}
-"!="    			 {printf("T_NE\n"); return(NE);}
-">"				 	 {printf("T_GT\n"); return(GT);}
-">="    			 {printf("T_GE\n"); return(GE);}
-"<"     			 {printf("T_LT\n"); return(LT);}
-True				 {printf("T_TRUE\n"); return TRUE;}
-False				 {printf("T_FALSE\n"); return FALSE;}
+[\n]				 { curr_depth = 0; printf("\n"); yylineno++; return (NEWLINE);}
+if    				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_IF "); return(IF);}
+else  				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_ELSE "); return(ELSE);}
+for   			 	 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_FOR "); return (FOR);}
+while 				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_WHILE "); return(WHILE);}
+in    				 {printf("T_IN "); return(IN);}
+print				 { if(depth == 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_PRINT "); return(PRINT);}
+range				 {printf("T_RANGE "); return (RANGE);}
+"+"					 { printf("T_PL "); return(ADDITION); }
+"-"					 { printf("T_MI "); return(SUBTRACT); }
+"*"					 { printf("T_MU "); return(MULTIPLY); }
+"/"					 { printf("T_DI "); return(DIVIDE); }
+","					 {printf("T_COMMA "); return (COMMA);}
+":"					 {printf("T_COLON "); return(COLON);}
+"("					 {printf("T_OCB "); return (OCB);}
+")"					 {printf("T_CCB "); return (CCB);}
+"=="    			 {printf("T_EQ "); return(EQ);}
+"<="    			 {printf("T_LE "); return(LE);}
+"!="    			 {printf("T_NE "); return(NE);}
+">"				 	 {printf("T_GT "); return(GT);}
+">="    			 {printf("T_GE "); return(GE);}
+"<"     			 {printf("T_LT "); return(LT);}
+"="					 { printf("T_ASS "); return(ASS);}
+True				 {printf("T_TRUE "); return TRUE;}
+False				 {printf("T_FALSE "); return FALSE;}
 [0-9]+			 	 {
-						printf("T_DIGIT\n");
+						printf("T_DIGIT ");
 						yylval.iVal = atoi(yytext);
 						return(NUM);
 					 }
 [a-zA-Z_]([a-zA-Z_]|[0-9])*	 {
-								printf("T_ID\n");
+								if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; }
+								printf("T_ID ");
 								yylval.txt = strdup(yytext);
 								return ID;
 							}
 \".*\"						{ 
 				  				yylval.txt = strdup(yytext);
-								printf("T_STRING\n");
+								printf("T_STRING ");
 								return (STRING);
 							}
 #.*\n       		 {yylineno++;}

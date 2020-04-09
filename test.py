@@ -1,6 +1,8 @@
-x = 10
-while True
-	if True:
-		x = 5
-for i in range(10):
-	z = "random string"
+k = 5
+while True:
+	for i in range(10):
+		if(i < 5):
+			print("hello")
+		a = 20
+	print(a)
+k = k + 1
