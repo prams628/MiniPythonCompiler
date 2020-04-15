@@ -21,8 +21,8 @@
 	{
 		// type stores if the variable is a function or an identifier. since we aren't handling functions, it's always 
 		// "identifier"
-		char name[100], type[15], sValue[100];
-		int iValue, lineno;
+		char name[100], type[15], value[100];
+		int lineno;
 		int scope, index, dt;
 	};
 	struct sym_table_entry symbol_table[100];
@@ -65,11 +65,9 @@
 	}
 
 	// Some function definitions required
-	void add_int(struct sym_table_entry[], char[], int, int);
-	void add_str(struct sym_table_entry[], char[], char[], int);
+	void add_var(struct sym_table_entry[], char[], char[], int);
 	void display(struct sym_table_entry[]);
-	void search_update_int(struct sym_table_entry[], char[], int, int);
-	void search_update_str(struct sym_table_entry[], char[], char[], int);
+	int search_update_var(struct sym_table_entry[], char[]);
 
 	int count = 0, i, temp_variable_count = 0, temp_integer, variable_found = 0, int_or_str;
 	char temp_string[100];
@@ -257,7 +255,7 @@ RangeElements :	T {$$ = mknode(",", NONE, 1, $1);;}
    ;
 
 condition : id IN RANGE OCB RangeElements CCB {
-		search_update_int(symbol_table, $1 -> token, 0, INT);
+		add_var(symbol_table, $1 -> token, 0, INT);
 		$$ = mknode("Condition", NONE, 2, $1, $5);}
 
 bool_exp : bool_term OR bool_term {$$ = mknode("Or", RELOP, 2, $1, $3);}
@@ -282,12 +280,12 @@ Assignment1: id ASS E NEWLINE
                             	if(int_or_str == 1)
 								{
 									$$ = mknode("=", NONE, 2, $1, $3);
-									search_update_int(symbol_table, $1 -> token, atoi($3 -> token), INT);
+									add_var(symbol_table, $1 -> token, ($3 -> token), INT);
 								}
 								else if(int_or_str == STR)
 								{
 									$$ = mknode("=", NONE, 2, $1, $3);
-									search_update_str(symbol_table, $1 -> token, $3 -> token, STR);
+									add_var(symbol_table, $1 -> token, $3 -> token, STR);
 								}
 							}
 	| error {yyerrok; yyclearin;}
@@ -372,76 +370,38 @@ PrintFunc: PRINT OCB E CCB NEWLINE start { $$ = mknode("Print", NONE, 1, $3); }
 
 
 
-void search_update_int(struct sym_table_entry table[],char name[], int value, int type)
+int search_update_var(struct sym_table_entry table[],char name[])
 {
 	int i;
 	for(i = 0; i < count; i++)
 	{
 		if(strcmp(table[i].name, name) == 0)
-		{
-			if(table[i].dt == INT)
-			{
-				table[i].iValue = value;
-				return;
-			}
-			else
-			{
-				printf("Trying to assign string value to an integer. I give up\n");
-				exit(1);
-			}
-		}
+			return i;
 	}
-	add_int(table, name, value, type);
+	return -1;
 }
 
-// This function will check if the string is already present in the symbol table
-void search_update_str(struct sym_table_entry table[],char name[], char value[], int type)
+void add_var(struct sym_table_entry table[], char name[], char value[], int type)
 {
-	int i;
-	for(i = 0; i < count; i++)
+	int retVal = search_update_var(table, name);
+	if(retVal == -1)
 	{
-		if(strcmp(table[i].name, name) == 0)
-		{
-			if(table[i].dt == STR)
-			{
-				return;
-			}
-			else
-			{
-				printf("Trying to assign integer value to a string. I give up\n");
-				exit(1);
-			}
-		}
+		struct sym_table_entry temp;
+		strcpy(temp.name,name);
+		strcpy(temp.value, value);
+		temp.dt = type;
+		temp.scope = 1;
+		temp.lineno = yylineno - 1;
+		strcpy(temp.type, "identifier");
+		temp.index = count;
+		table[count] = temp;
+		count++;
 	}
-	add_str(table, name, value, type);
-}
-
-void add_int(struct sym_table_entry table[], char name[], int value, int type)
-{
-	struct sym_table_entry temp;
-	strcpy(temp.name,name);
-	temp.iValue = value;
-	temp.dt = type;
-	strcpy(temp.type, "identifier");
-	temp.scope = 1;
-	temp.index = count;
-	temp.lineno = yylineno - 1;
-	table[count] = temp;
-	count++;
-}
-
-void add_str(struct sym_table_entry table[], char name[], char value[], int type)
-{
-	struct sym_table_entry temp;
-	strcpy(temp.name,name);
-	strcpy(temp.sValue, value);
-	temp.dt = type;
-	temp.scope = 1;
-	temp.lineno = yylineno - 1;
-	strcpy(temp.type, "identifier");
-	temp.index = count;
-	table[count] = temp;
-	count++;
+	else
+	{
+		strcpy(table[retVal].value, value);
+		table[retVal].dt = int_or_str;
+	}
 }
 
 void display(struct sym_table_entry table[])
@@ -449,10 +409,7 @@ void display(struct sym_table_entry table[])
 	int i;
 	for(i = 0; i < count; i++)
 	{
-		if(table[i].dt == INT)
-			printf("%s INT %d %s\n", table[i].name, table[i].iValue, table[i].type);
-		else
-			printf("%s STR %s %s\n", table[i].name, table[i].sValue, table[i].type);
+		printf("%s STR %s %s %d\n", table[i].name, table[i].value, table[i].type, table[i].dt);
 	}
 }
 
