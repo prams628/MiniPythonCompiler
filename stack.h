@@ -1,26 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int sp = 0, *stack, top;
-
-int *init(int max)
+typedef struct Stack
 {
-	int *stack = (int*)malloc(sizeof(int) * max);
-	return stack;
+	int looping_construct, next_counter;
+}stack;
+int sp = 0, top;
+
+stack *init(int max)
+{
+	stack *STACK = (stack*)malloc(sizeof(stack) * max);
+	return STACK;
 }
 
-void push_to_stack(int *stack, int ele)
+void push_to_stack(stack *STACK, int ele, int next_counter)
 {
-	stack[sp++] = ele;
+	STACK[sp].looping_construct = ele;
+	STACK[sp++].next_counter = next_counter;
 }
 
-int pop_from_stack(int *stack)
+int pop_from_stack(stack *STACK)
 {
-	top = stack[--sp];
+	top = --sp;
 	return top;
 }
 
-int peek(int *stack)
+int peek(stack *STACK)
 {
-	return stack[sp];
+	printf("Peek function of the stack called. top = %d; loop = %d; next = %d\n", sp - 1, STACK[sp - 1].looping_construct, STACK[sp - 1].next_counter);
 }

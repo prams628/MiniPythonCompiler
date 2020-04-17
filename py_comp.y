@@ -4,6 +4,7 @@
    #include <stdarg.h>
    #include "stack.h"
 
+   #define DEBUG 0
    #define INT 1
    #define STR 2
    #define for_loop 3
@@ -16,6 +17,7 @@
    #define STIRNG 14
    #define TRUTH 15
    #define NONE 20
+   #define MAXQUADS 500
  
    struct sym_table_entry
 	{
@@ -33,6 +35,11 @@
 		struct ASTNode **children;
 		char *token;
 	} node;
+
+	typedef struct Quadruple
+	{
+		char *op, *result, *arg1, *arg2;
+	}quad;
 
 	node *mknode(char *token, int type, int noOfChildren, ...)
 	{
@@ -75,10 +82,53 @@
 	int label_count_proposed = 0, label_count_actual = 0;
 	int for_loop_counter = 0;
 	int while_loop_counter = 0;
-	int next_counter = 0, loop_stack[10];
+	int next_counter = 0, quadCount = 0;
+	quad *quadArray = NULL;
+	stack *loop_stack = NULL;
+
+	void pInit()
+	{
+		quadArray = (quad*)malloc(sizeof(quad) * MAXQUADS);
+		loop_stack = init(10);
+	}
+
+	void makeQuad(char *res, char *arg1, char *arg2, char *op)
+	{
+		quadArray[quadCount].result = (char*)malloc(sizeof(char) * (strlen(res) + 1));
+		strcpy(quadArray[quadCount].result, res);
+		if(arg1)
+		{
+			quadArray[quadCount].arg1 = (char*)malloc(sizeof(char) * (strlen(arg1) + 1));
+			strcpy(quadArray[quadCount].arg1, arg1);
+		}
+		if(arg2)
+		{
+			quadArray[quadCount].arg2 = (char*)malloc(sizeof(char) * (strlen(arg2) + 1));
+			strcpy(quadArray[quadCount].arg2, arg2);
+		}
+		quadArray[quadCount].op = (char*)malloc(sizeof(char) * (strlen(op) + 1));
+		strcpy(quadArray[quadCount].op, op);
+		quadCount++;
+	}
+
+	void printQuad()
+	{
+		printf("--------------------------------QUADS-----------------------------------\n");
+		printf("RESULT\t\tARG1\t\tOP\t\tARG2\n");
+		int i;
+		for(i = 0; i < quadCount; i++)
+		{
+			printf("%s\t\t%s\t\t%s\t\t%s\n", quadArray[i].result, quadArray[i].arg1, quadArray[i].op, quadArray[i].arg2);
+		}
+	}
 
 	char snum[10];
 	char T[] = "T";
+
+	void freeRes()
+	{
+		free(quadArray);
+	}
 
 	void printICG(node *tree)
 	{
@@ -90,48 +140,106 @@
 				node *current_tree = (node*)malloc(sizeof(node));
 				current_tree = tree -> children[0];
 				printICG(current_tree -> children[1]);
-				printf("%s = T%d\n", current_tree -> children[0] -> token, temp_variable_count++);
+				char *tempVarString = (char*)malloc(sizeof(char) * 4);
+				sprintf(tempVarString, "T%d", temp_variable_count++);
+				printf("%s = %s\n", current_tree -> children[0] -> token, tempVarString);
+				makeQuad(current_tree -> children[0] -> token, tempVarString, NULL, "=");
 				free(current_tree);
+				free(tempVarString);
 				printICG(tree -> children[1]);
 			}
 
 			if(tree -> type == NUMBER || tree -> type == IDENTIFIER)
 			{
-				printf("T%d = %s\n", temp_variable_count, tree -> token);
+				char *tempVarString = (char*)malloc(sizeof(char) * 4);
+				sprintf(tempVarString, "T%d", temp_variable_count);
+				add_var(symbol_table, tempVarString, "0", INT);
+				printf("%s = %s\n", tempVarString, tree -> token);
+				makeQuad(tempVarString, tree -> token, NULL, "=");
+				free(tempVarString);
 			}
 
 			if(tree -> type == BINARY)
 			{
 				printICG(tree -> children[0]);
-				sprintf(snum, "%d", temp_variable_count);
+				sprintf(snum, "T%d", temp_variable_count);
 				temp_variable_count++;
-				char T[] = "T";
-				printf("T%d = %s %s %s\n", temp_variable_count,strcat(T, snum) , tree -> token, tree -> children[1] -> token);
+				char *tempVarString = (char*)malloc(sizeof(char) * 4);
+				sprintf(tempVarString, "T%d", temp_variable_count);
+				add_var(symbol_table, tempVarString, "0", INT);
+				printf("%s = %s %s %s\n", tempVarString, snum, tree -> token, tree -> children[1] -> token);
+				makeQuad(tempVarString, snum, tree -> children[1] -> token, tree -> token);
+				free(tempVarString);
 			}
 
 			if(strcmp("If", tree -> token) == 0)
 			{
-				push_to_stack(loop_stack, if_statement);
+				push_to_stack(loop_stack, if_statement, 0);
+				if(DEBUG)
+					peek(loop_stack);
+
+				// The left child gives the condition for the if statement to be triggered while the right child contains the block
 				printICG(tree -> children[0]);
-				printf("IfFalse T%d goto L%d\n", temp_variable_count++, label_count_proposed++);
+
+				// Creating a dynamic variable to store the count of temp variables in a string
+				char *tempVarString = (char*)malloc(sizeof(char) * 4);
+				sprintf(tempVarString, "T%d", temp_variable_count++);
+				add_var(symbol_table, tempVarString, "0", INT);
+
+				// Creating a dynamic variable to store the count of labels in a string
+				char *tempLabString = (char*)malloc(sizeof(char) * 4);
+				sprintf(tempLabString, "L%d", label_count_proposed++);
+				printf("IfFalse %s goto %s:\n", tempVarString, tempLabString);
+				
+				// Add the above statement to the quad array
+				makeQuad(tempLabString, tempVarString, NULL, "IfFalse");
+				
+				// Free the above created variables
+				free(tempVarString);
+				free(tempLabString);
 				label_count_actual = label_count_proposed;
+				
+				// Move further down the AST by moving to the right child
 				printICG(tree -> children[1]);
 			}
 
 			if(strcmp("While", tree -> token) == 0)
 			{
-				push_to_stack(loop_stack, while_loop);
-				printf("while%d:\n", while_loop_counter++);
+				push_to_stack(loop_stack, while_loop, next_counter);
+				if(DEBUG)
+					peek(loop_stack);
+
+				// Creating a dynamic variable to store the count of labels in a string
+				char *tempLabString = (char*)malloc(sizeof(char) * 4);
+				sprintf(tempLabString, "while%d", while_loop_counter++);
+				printf("%s:\n", tempLabString);
+				makeQuad(tempLabString, NULL, NULL, "Label");
 				printICG(tree -> children[0]);
-				label_count_proposed++;
-				printf("IfFalse T%d goto next%d:\n", temp_variable_count++, label_count_proposed++, next_counter++);
-				label_count_actual = label_count_proposed;
+				// label_count_proposed++; (Commented the two lines because felt they are not needed here. If needed, uncomment it)
+				
+				// Creating a dynamic variable to store the count of temp variables in a string
+				char *tempVarString = (char*)malloc(sizeof(char) * 4);
+				sprintf(tempVarString, "T%d", temp_variable_count++);
+				add_var(symbol_table, tempVarString, "0", INT);
+				sprintf(tempLabString, "next%d", next_counter++);
+				printf("IfFalse %s goto %s:\n", tempVarString, tempLabString);
+				makeQuad(tempLabString, tempVarString, NULL, "IfFalse");
+
+				// Free the above variables
+				free(tempLabString);
+				free(tempVarString);
+
+				// label_count_actual = label_count_proposed;
 				printICG(tree -> children[1]);
 			}
 			if(strcmp("For", tree -> token) == 0)
 			{
-				push_to_stack(loop_stack, for_loop);
-				next_counter++;
+				if(DEBUG)
+					printf("The value of next_counter = %d\n", next_counter);
+				push_to_stack(loop_stack, for_loop, next_counter);
+				if(DEBUG)
+					peek(loop_stack);
+
 				node *condition = tree -> children[0];
 				int start_index = -1, end_index, step_index = 1;
 
@@ -152,18 +260,69 @@
 
 				printf("for%d_step = %d\n", for_loop_counter ,step_index);
 				printf("for%d_stop = %d\n", for_loop_counter, end_index);
+
+				// Creating a dynamic string
+				char *tempLabString = (char*)malloc(sizeof(char) * 4);
+				char *tempVarString = (char*)malloc(sizeof(char) * 4);
+
+				// The two temporary variables declared above will now be added to the symbol table
+				sprintf(tempVarString, "for%d_step", for_loop_counter); // This is the step value of the for loop
+				add_var(symbol_table, tempVarString, "0", INT);
+				sprintf(tempLabString, "%d", step_index); 				// using tempLabString to store arg1 here (to avoid creating another variable)
+				makeQuad(tempVarString, tempLabString, NULL, "=");
+				
+				sprintf(tempVarString, "for%d_stop", for_loop_counter);	// This is the stop value of the for loop
+				add_var(symbol_table, tempVarString, "0", INT);
+				sprintf(tempLabString, "%d", end_index); 				// using tempLabString to store arg1 here (to avoid creating another variable)
+				makeQuad(tempVarString, tempLabString, NULL, "=");
 				printf("%s = %d\n", condition -> children[0] -> token, start_index);	
+
+				// Create a label quad here
+				sprintf(tempLabString, "for%d", for_loop_counter);
+				makeQuad(tempLabString, NULL, NULL, "label");
 				printf("for%d:\n", for_loop_counter++);
-				printf("T%d = %s + 1\n", temp_variable_count++, condition -> children[0] -> token);
-				printf("%s = T%d\n",condition -> children[0] -> token, --temp_variable_count);
+
+				sprintf(tempVarString, "T%d", temp_variable_count++);
+				printf("%s = %s + 1\n", tempVarString, condition -> children[0] -> token);
+				printf("%s = %s\n",condition -> children[0] -> token, tempVarString);
+				// Add the above statements to the quad
+				makeQuad(tempVarString, condition -> children[0] -> token, "1", "+");
+				makeQuad(condition -> children[0] -> token, tempVarString, "1", "+");
+				
 				printf("IfFalse %s < %d goto next%d:\n", condition -> children[0] -> token, end_index, next_counter);
+				sprintf(tempVarString, "T%d", temp_variable_count++);
+				add_var(symbol_table, tempVarString, "0", INT);
+				sprintf(tempLabString, "%d", end_index);	// using tempLabString to store arg2 here (to avoid creating another variable)
+				makeQuad(tempVarString, condition -> children[0] -> token, tempLabString, "<");
+				sprintf(tempLabString, "next%d", next_counter++);
+				makeQuad(tempLabString, tempVarString, NULL, "IfFalse");
+
 				label_count_actual++;
+				free(tempLabString);
+				free(tempVarString);
+
 				printICG(tree -> children[1]);
 			}
 			if(tree -> type == TRUTH)
-				printf("T%d = %s\n", temp_variable_count, tree -> token);
+			{
+				char *tempVarString = (char*)malloc(sizeof(char) * 4);
+
+				sprintf(tempVarString, "T%d", temp_variable_count);
+				printf("%s = %s\n", tempVarString, tree -> token);
+				makeQuad(tempVarString, tree -> token, NULL, "=");
+
+				free(tempVarString);
+			}
 			if(tree -> type == RELOP)
-				printf("T%d = %s %s %s\n", temp_variable_count, tree -> children[0] -> token, tree -> token, tree -> children[1] -> token);
+			{
+				char *tempVarString = (char*)malloc(sizeof(char) * 4);
+
+				sprintf(tempVarString, "T%d", temp_variable_count);
+				printf("%s = %s %s %s\n", tempVarString, tree -> children[0] -> token, tree -> token, tree -> children[1] -> token);
+				makeQuad(tempVarString, tree -> children[0] -> token, tree -> children[1] -> token,  tree -> token);
+			
+				free(tempVarString);
+			}
 			if(strcmp(tree -> token, "BeginBlock") == 0 || strcmp(tree -> token, "Next") == 0)
 			{
 				printICG(tree -> children[0]);
@@ -171,24 +330,45 @@
 			}
 			if(strcmp(tree -> token, "EndBlock") == 0)
 			{
-				int top = pop_from_stack(loop_stack);
+				char *tempLabString = (char*)malloc(sizeof(char) * 4);
+				int temp = pop_from_stack(loop_stack);
+				if(DEBUG)
+					printf("value of temp in EndBlock: %d\n", loop_stack[temp].next_counter);
+				int top = loop_stack[temp].looping_construct;
 				if(top == for_loop)
 				{
-					printf("goto for%d\n", --for_loop_counter);
-					printf("next%d:\n", next_counter);
+					sprintf(tempLabString, "for%d", --for_loop_counter);
+					printf("goto %s\n", tempLabString);
+					makeQuad(tempLabString, NULL, NULL, "goto");
+
+					sprintf(tempLabString, "next%d", loop_stack[temp].next_counter);
+					printf("%s:\n", tempLabString);
+					makeQuad(tempLabString, NULL, NULL, "Label");
 				}
 				else if(top == while_loop)
 				{
-					printf("goto while%d\n", --while_loop_counter);
-					printf("next%d:\n", --next_counter);
+					sprintf(tempLabString, "while%d", --while_loop_counter);
+					printf("goto %s\n", tempLabString);
+					makeQuad(tempLabString, NULL, NULL, "goto");
+
+					sprintf(tempLabString, "next%d", loop_stack[temp].next_counter);
+					printf("%s:\n", tempLabString);
+					makeQuad(tempLabString, NULL, NULL, "Label");
 				}
 				else if(top == if_statement)
-					printf("L%d:\n", --label_count_actual);
-					printICG(tree -> children[0]);
+				{
+					sprintf(tempLabString, "L%d", --label_count_actual);
+					printf("%s:\n", tempLabString);
+					makeQuad(tempLabString, NULL, NULL, "Label");
+				}
+				free(tempLabString);
+
+				printICG(tree -> children[0]);
 			}
 			if(strcmp(tree -> token, "Print") == 0)
 			{
 				printf("print %s\n", tree -> children[0] -> token);
+				makeQuad(tree -> children[0] -> token, NULL, NULL, "print");
 			}
 		}
 	}
@@ -219,12 +399,15 @@
  
 %%
 
-main_start: start  {
+main_start: {pInit();} start  {
 			printf("\n------------------AST---------------------\n");
-			printtree($1); 
-			printf("\n------------------ICG---------------------\n");
-			printICG($1);
+			printtree($2); 
+			printf("\n\n------------------ICG---------------------\n");
+			printICG($2);
 			printf("\n");
+			printQuad();
+			printf("\n");
+			freeRes();
 		} 
 
 start: Assignment1 start { if($2 -> token == NULL) $$ = mknode("node", NONE, 1, $1); else $$ = mknode("node", NONE, 2, $1, $2); }
@@ -255,7 +438,7 @@ RangeElements :	T {$$ = mknode(",", NONE, 1, $1);;}
    ;
 
 condition : id IN RANGE OCB RangeElements CCB {
-		add_var(symbol_table, $1 -> token, 0, INT);
+		add_var(symbol_table, $1 -> token, "0", INT);
 		$$ = mknode("Condition", NONE, 2, $1, $5);}
 
 bool_exp : bool_term OR bool_term {$$ = mknode("Or", RELOP, 2, $1, $3);}
@@ -275,12 +458,11 @@ bool_term : bool_factor {$$ = $1;}
 bool_factor : NOT bool_factor {$$ = mknode("!", NONE, 1, $2);}
             | OCB bool_exp CCB {$$ = $2;}; 
 
-Assignment1: id ASS E NEWLINE
-							{
+Assignment1: id ASS E NEWLINE	{
                             	if(int_or_str == 1)
 								{
 									$$ = mknode("=", NONE, 2, $1, $3);
-									add_var(symbol_table, $1 -> token, ($3 -> token), INT);
+									add_var(symbol_table, $1 -> token, "0", INT);
 								}
 								else if(int_or_str == STR)
 								{
@@ -409,7 +591,7 @@ void display(struct sym_table_entry table[])
 	int i;
 	for(i = 0; i < count; i++)
 	{
-		printf("%s STR %s %s %d\n", table[i].name, table[i].value, table[i].type, table[i].dt);
+		printf("%s\t%s\t%s\t%d\n", table[i].name, table[i].value, table[i].type, table[i].dt);
 	}
 }
 
