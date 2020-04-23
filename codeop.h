@@ -104,7 +104,7 @@ int deadCodeElimination()
 	free(currVar);
 	return elim;
 }
-int check_temp(char*var)
+int check_temp(char*var) //check if the string passed to the function is a temporary variable name
 {
     if(var[0]!='t')
     {
@@ -118,7 +118,7 @@ int check_temp(char*var)
     return 1;
 }
 
-int check_number(char*string)
+int check_number(char*string)   //check if given string only has numbers in it
 {
     for(int i=0;i<strlen(string);i++)
     {
@@ -128,7 +128,7 @@ int check_number(char*string)
     return 1;
 }
 
-int compute_result(quad q)
+int compute_result(quad q) //given a quad with numbers as args and an arithmetic operator as op, return integer result of the op 
 {
     int i1,i2;
     
@@ -155,7 +155,7 @@ int compute_result(quad q)
     }
 }
 
-void replace_value(int value,int i,char*name)
+void replace_value(int value,int i,char*name) //given value of temporary var, replace that var when used in rhs during assignment with value
 {
     for(int j=i+1;j<quadCount;j++)
     {
