@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include<ctype.h>
 #define debug 1
 
 typedef struct Quadruple
@@ -102,4 +103,97 @@ int deadCodeElimination()
 	}
 	free(currVar);
 	return elim;
+}
+int check_temp(char*var)
+{
+    if(var[0]!='t')
+    {
+        return 0;
+    }
+    for(int i=1;i<strlen(var);i++)
+    {
+        if(isdigit(var[i])==0)
+            return 0;
+    }
+    return 1;
+}
+
+int check_number(char*string)
+{
+    for(int i=0;i<strlen(string);i++)
+    {
+        if(isdigit(string[i])==0)
+            return 0;
+    }
+    return 1;
+}
+
+int compute_result(quad q)
+{
+    int i1,i2;
+    
+    sscanf(q.arg1, "%d", &i1);
+    sscanf(q.arg2, "%d", &i2);
+
+    if(q.op[0]=='+')
+        return i1+i2;
+    
+    if(q.op[0]=='-')
+        return i1-i2;
+    
+    if(q.op[0]=='*')
+        return i1*i2;
+    
+    if(q.op[0]=='/')
+    {
+        if(i2==0)
+        {
+            printf("\nERROR DIV BY ZERO\n");
+            return 213413534;
+        }
+        return i1/i2;
+    }
+}
+
+void replace_value(int value,int i,char*name)
+{
+    for(int j=i+1;j<quadCount;j++)
+    {
+        //if temp value is recalced
+        if(strcmp(quadArray[j].result,name)==0)
+            return;
+        
+        //put in calc value in place of var name
+        if(strcmp(quadArray[j].op,"=")==0&&strcmp(quadArray[j].arg1,name)==0&&quadArray[j].arg2==NULL)
+        {
+            sprintf(quadArray[j].arg1, "%d", value); 
+        }
+    }
+}
+
+void code_folding()
+{
+    for(int i=0;i<quadCount;i++)
+    {
+        //if its temp variable getting assigned arithmetic expression
+        if(check_temp(quadArray[i].result)&&check_number(quadArray[i].arg2)&&check_number(quadArray[i].arg1))
+        {
+            //evaluate the arithmetic exp
+            int val=compute_result(quadArray[i]);
+                        
+            //replace any assigment of var=temp_var with var=i 
+            replace_value(val,i,quadArray[i].result);
+
+            //remove this quad statement from quad array now that its done
+            for(int j=i;j<quadCount-1;j++)
+            {
+                quadArray[j]=quadArray[j+1];
+            }
+            quadCount--;
+            //since everything moved back, to be on the right statement
+            i--;
+            
+        }
+    }
+
 }
