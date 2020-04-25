@@ -76,7 +76,7 @@
 	char temp_string[100];
 	extern int yylineno;
 	int label_count_proposed = 0, label_count_actual = 0;
-	int for_loop_counter = 0;
+	int for_loop_counter = 0, c = 1;
 	int while_loop_counter = 0;
 	int next_counter = 0;
 	stack *loop_stack = NULL;
@@ -363,7 +363,11 @@ main_start: {pInit();} start  {
 			printf("\n");
 			printQuad();
 			printf("\n");
-			while(deadCodeElimination());
+			while(c)
+			{
+				code_folding();
+				c = deadCodeElimination();
+			}
 			printf("\n");
 			printQuad();
 			printf("\n");

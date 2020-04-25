@@ -106,7 +106,9 @@ int deadCodeElimination()
 }
 int check_temp(char*var) //check if given string is a valid temporary vaariable name
 {
-    if(var[0]!='t')
+	if(!var)
+		return 0;
+    if(var[0]!='T')
     {
         return 0;
     }
@@ -169,18 +171,18 @@ int compute_result(quad q)
 
 void replace_value(int value,int i,char*name)
 {
-    for(int j=i+1;j<quadCount;j++)
+	for(int j=i+1;j<quadCount;j++)
     {
-        //if temp value is recalced
-        if(strcmp(quadArray[j].result,name)==0)
+		//if temp value is recalced
+		if(quadArray[j].result != NULL && strcmp(quadArray[j].result,name)==0)
             return;
         
-        //put in calc value in place of temp_var name if it is assigned to some variable
+	    //put in calc value in place of temp_var name if it is assigned to some variable
         if(quadArray[j].arg1!=NULL&&strcmp(quadArray[j].arg1,name)==0)
         {
             sprintf(quadArray[j].arg1, "%d", value); 
         }
-        //replace temp_var if it is being used as an arguement also
+	    //replace temp_var if it is being used as an arguement also
         if(quadArray[j].arg2!=NULL&&strcmp(quadArray[j].arg2,name)==0)
         {
             sprintf(quadArray[j].arg2, "%d", value); 
@@ -192,12 +194,11 @@ void code_folding()
 {
     for(int i=0;i<quadCount;i++)
     {
-        //if its temp variable getting assigned arithmetic expression or if it is directly assigned a number
+		//if its temp variable getting assigned arithmetic expression or if it is directly assigned a number
         if(check_temp(quadArray[i].result)&&check_number(quadArray[i].arg1)&&(check_number(quadArray[i].arg2)||strcmp(quadArray[i].op,"=")==0))
         {
             //evaluate the arithmetic exp
             int val=compute_result(quadArray[i]);
-                        
             //replace any assigment of var=temp_var with var=val
             replace_value(val,i,quadArray[i].result);
 
