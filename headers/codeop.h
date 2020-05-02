@@ -54,6 +54,28 @@ void printQuad()
 	}
 }
 
+void writeToFile()
+{
+	// Open the file to which the three address code should be written
+	FILE *oFile = fopen("icg", "w");
+
+	// A temp string which stores the current data that should be written to the file.
+	char *temp = (char*)malloc(sizeof(char) * 100);
+
+	// Write the code into a file titled 'icg'
+	for(int i = 0; i < quadCount; i++)
+	{
+		if(quadArray[i].active)
+		{
+			sprintf(temp, "%s\t\t%s\t\t%s\t\t%s\n", quadArray[i].result, quadArray[i].arg1, quadArray[i].op, quadArray[i].arg2);
+			fwrite(temp, strlen(temp), 1, oFile);
+		}
+	}
+
+	// Close the file
+	fclose(oFile);
+}
+
 int deadCodeElimination()
 {
 	int i, j, aliveCode, elim = 0;

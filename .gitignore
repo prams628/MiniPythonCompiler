@@ -1,6 +1,6 @@
 y.tab.h
 
-*.py
+test.py
 
 *.c
 
@@ -9,3 +9,5 @@ a.out
 y.output
 
 examples/
+
+.vscode/

@@ -2,8 +2,8 @@
    #include<string.h>
    #include <ctype.h>
    #include <stdarg.h>
-   #include "stack.h"
-   #include "codeop.h"
+   #include "headers/stack.h"
+   #include "headers/codeop.h"
 
    #define DEBUG 0
    #define INT 1
@@ -371,6 +371,7 @@ main_start: {pInit();} start  {
 			printf("\n");
 			printQuad();
 			printf("\n");
+			writeToFile();
 			freeRes();
 		} 
 
