@@ -1,4 +1,4 @@
-# Project Title
+# MiniPython Compiler
 A very basic compiler for python developed using lex and yacc. All the phases of compiler design have been covered and this compiler can parse basic statements, selection and looping constructs. 
 
 
