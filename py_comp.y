@@ -4,6 +4,7 @@
    #include <stdarg.h>
    #include "headers/stack.h"
    #include "headers/codeop.h"
+   #include "headers/symboltable.h"
 
    #define DEBUG 0
    #define INT 1
@@ -20,16 +21,6 @@
    #define NONE 20
    #define MAXQUADS 500
  
-   struct sym_table_entry
-	{
-		// type stores if the variable is a function or an identifier. since we aren't handling functions, it's always 
-		// "identifier"
-		char name[100], type[15], value[100];
-		int lineno;
-		int scope, index, dt;
-	};
-	struct sym_table_entry symbol_table[100];
-
 	typedef struct ASTNode
 	{
 		int noOfChildren, type;
@@ -67,12 +58,7 @@
 		printf(" )");
 	}
 
-	// Some function definitions required
-	void add_var(struct sym_table_entry[], char[], char[], int);
-	void display(struct sym_table_entry[]);
-	int search_update_var(struct sym_table_entry[], char[]);
-
-	int count = 0, i, temp_variable_count = 0, temp_integer, variable_found = 0, int_or_str;
+	int i, temp_variable_count = 0, temp_integer, variable_found = 0, int_or_str;
 	char temp_string[100];
 	extern int yylineno;
 	int label_count_proposed = 0, label_count_actual = 0;
@@ -80,11 +66,13 @@
 	int while_loop_counter = 0;
 	int next_counter = 0;
 	stack *loop_stack = NULL;
+	struct sym_table_entry *symbol_table = NULL;
 
 	void pInit()
 	{
 		quadArray = quadInit(500);
 		loop_stack = init(10);
+		symbol_table = initSym(100);
 	}
 
 	char snum[10];
@@ -372,6 +360,7 @@ main_start: {pInit();} start  {
 			printQuad();
 			printf("\n");
 			writeToFile();
+			writeST(symbol_table);
 			freeRes();
 		} 
 
@@ -514,51 +503,6 @@ PrintFunc: PRINT OCB E CCB NEWLINE start { $$ = mknode("Print", NONE, 1, $3); }
    ;
 
 %%
-
-
-
-int search_update_var(struct sym_table_entry table[],char name[])
-{
-	int i;
-	for(i = 0; i < count; i++)
-	{
-		if(strcmp(table[i].name, name) == 0)
-			return i;
-	}
-	return -1;
-}
-
-void add_var(struct sym_table_entry table[], char name[], char value[], int type)
-{
-	int retVal = search_update_var(table, name);
-	if(retVal == -1)
-	{
-		struct sym_table_entry temp;
-		strcpy(temp.name,name);
-		strcpy(temp.value, value);
-		temp.dt = type;
-		temp.scope = 1;
-		temp.lineno = yylineno - 1;
-		strcpy(temp.type, "identifier");
-		temp.index = count;
-		table[count] = temp;
-		count++;
-	}
-	else
-	{
-		strcpy(table[retVal].value, value);
-		table[retVal].dt = int_or_str;
-	}
-}
-
-void display(struct sym_table_entry table[])
-{
-	int i;
-	for(i = 0; i < count; i++)
-	{
-		printf("%s\t%s\t%s\t%d\n", table[i].name, table[i].value, table[i].type, table[i].dt);
-	}
-}
 
 int main(int argc, char *argv[])
 {
