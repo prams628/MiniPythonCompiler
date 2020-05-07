@@ -127,7 +127,8 @@ class CodeGen:
 			Deallocates any registers which are holding variables currently not alive
 		"""
 		for key in self.regState.keys():
-			if key not in self.aliveVars:
+			if self.regState[key] and self.regState[key] not in self.aliveVars:
+				self.assembly_code.append("ST {}, {}".format(self.regState[key], key))
 				self.regState[key] = None
 			
 	def _allocateReg(self, var, lineno):
@@ -140,7 +141,7 @@ class CodeGen:
 		"""
 		self._aliveVars(lineno)
 		self._freeReg()
-		if (var[0] <= "9" and var[0] >= "0") or var == "True" or var == "False":
+		if var[0] <= "9" and var[0] >= "0":
 			return "#" + var
 		# if variable is in self.regState.values(), 
 		# it means that the variable is already allocated a register and we simply need to find it
@@ -151,6 +152,7 @@ class CodeGen:
 		else:
 			for reg in self.regState:
 				if self.regState[reg] is None:
+					self.assembly_code.append("LD {}, {}".format(reg, var))
 					self.regState[reg] = var
 					return reg
 
@@ -174,8 +176,6 @@ class CodeGen:
 	def generate(self):
 		"""
 			This function generates the assembly code for the given program. It doesn't take in any parameters.
-			Returns:
-				- a list containing all the addresses
 		"""
 		self.st = self._symbolTableListify()
 		self.threeAddressCode = self._threeAddressListify()
@@ -209,8 +209,10 @@ class CodeGen:
 			else:
 				line = ""
 			self.assembly_code.append(line)
+		self._aliveVars(len(self.threeAddressCode) + 1)
+		self._freeReg()
 
 print("\n\n-----------------------------------CODE GENERATION-----------------------------------\n")
-cg = CodeGen('icg', 'st', noOfRegs=4, debug=True)
+cg = CodeGen('icg', 'st', noOfRegs=4)
 cg.generate()
 cg.printAssemblyCode()

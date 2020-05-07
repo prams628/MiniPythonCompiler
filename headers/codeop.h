@@ -82,16 +82,34 @@ int deadCodeElimination()
 	char *currVar = (char*)malloc(sizeof(char) * 30);		// currVar indicates the variable being checked for dead code
 	for(i = 0; i < quadCount - 1; i++)
 	{	
+		if(debug) printf("i: %d\n", i);
 		aliveCode = 0;										// Assuming that the current line of code is not of use
 		if(strcmp(quadArray[i].op, "print") == 0)
 			aliveCode = 1;
 		else
 		{
+			printf("Here0\n");
+			if(quadArray[i].arg1 && strcmp(quadArray[i].arg1, "True") == 0)
+			{
+				strcpy(quadArray[i].arg1, "100");
+				quadArray[i].arg2 = (char*)malloc(sizeof(char) * 4);
+				strcpy(quadArray[i].arg2, "100");
+				strcpy(quadArray[i].op, "==");
+			}
+			if(quadArray[i].arg1 && strcmp(quadArray[i].arg1, "False") == 0)
+			{
+				strcpy(quadArray[i].arg1, "100");
+				quadArray[i].arg2 = (char*)malloc(sizeof(char) * 4);
+				strcpy(quadArray[i].arg2, "1");
+				strcpy(quadArray[i].op, "==");
+			}
+			if(debug) printf("Here1\n");
 			strcpy(currVar, quadArray[i].result);
 			if(strcmp(quadArray[i].op, "Label") == 0 || strcmp(quadArray[i].op, "IfFalse") == 0 || strcmp(quadArray[i].op, "goto") == 0)
 				aliveCode = 1;
 			else
 			{
+				if(debug) printf("Here2\n");
 				for(j = i + 1; j < quadCount; j++)
 				{
 					if(quadArray[j].active)
