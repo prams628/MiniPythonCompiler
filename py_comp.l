@@ -33,7 +33,7 @@ else  				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; }
 for   			 	 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_FOR "); return (FOR);}
 while 				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_WHILE "); return(WHILE);}
 in    				 {printf("T_IN "); return(IN);}
-print				 { if(depth == 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_PRINT "); return(PRINT);}
+print				 { if(depth >= 1 && curr_depth == 0){ depth--; yyless(0); return DD; } printf("T_PRINT "); return(PRINT);}
 range				 {printf("T_RANGE "); return (RANGE);}
 "+"					 { printf("T_PL "); return(ADDITION); }
 "-"					 { printf("T_MI "); return(SUBTRACT); }

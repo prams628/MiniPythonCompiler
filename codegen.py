@@ -128,8 +128,15 @@ class CodeGen:
 		"""
 		for key in self.regState.keys():
 			if self.regState[key] and self.regState[key] not in self.aliveVars:
-				self.assembly_code.append("ST {}, {}".format(self.regState[key], key))
-				self.regState[key] = None
+				
+				if self.regState[key].startswith('"') and self.regState[key].endswith('"'):
+					self.assembly_code.append("STR {}, {}".format(chr(int(key[1]) + 64), key))
+					self.regState[key] = None
+				
+				else:
+					# self.assembly_code.append(self.regState[key])
+					self.assembly_code.append("STR {}, {}".format(self.regState[key], key))
+					self.regState[key] = None
 			
 	def _allocateReg(self, var, lineno):
 		"""
@@ -152,8 +159,14 @@ class CodeGen:
 		else:
 			for reg in self.regState:
 				if self.regState[reg] is None:
-					self.assembly_code.append("LD {}, {}".format(reg, var))
-					self.regState[reg] = var
+					if var.startswith('"') and var.endswith('"'):
+						char = chr(int(reg[1]) + 64)
+						self.assembly_code.insert(0, char + ": .asciz " + var)
+						self.assembly_code.append("LDR {}, ={}".format(reg, char))
+						self.regState[reg] = var
+					else:
+						self.assembly_code.append("LDR {}, {}".format(reg, var))
+						self.regState[reg] = var
 					return reg
 
 	def _symbolTableListify(self):

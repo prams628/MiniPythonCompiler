@@ -144,7 +144,7 @@ int deadCodeElimination()
 	free(currVar);
 	return elim;
 }
-int check_temp(char*var) //check if given string is a valid temporary vaariable name
+int check_temp(char*var) //check if given string is a valid temporary variable name
 {
 	if(!var)
 		return 0;

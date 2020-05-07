@@ -1,6 +1,1 @@
-a		3		=		(null)
-b		3		=		(null)
-T3		a		=		(null)
-T4		T3		/		b
-c		T4		=		(null)
-(null)		c		print		(null)
+(null)		10		print		(null)
