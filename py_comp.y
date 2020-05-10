@@ -313,6 +313,8 @@
 			{
 				printf("print %s\n", tree -> children[0] -> token);
 				makeQuad(NULL, tree -> children[0] -> token, NULL, "print");
+
+				printICG(tree -> children[1]);
 			}
 		}
 	}
@@ -499,8 +501,13 @@ T : NUM
     }
 	;
 
-PrintFunc: PRINT OCB E CCB NEWLINE start { $$ = mknode("Print", NONE, 1, $3); }
-   ;
+PrintFunc: PRINT OCB E CCB NEWLINE { $$ = mknode("Print", NONE, 1, $3); }
+		|  PRINT OCB E CCB NEWLINE while_stmt { $$ = mknode("Print", NONE, 2, $3, $6); }
+		|  PRINT OCB E CCB NEWLINE for_stmt { $$ = mknode("Print", NONE, 2, $3, $6); }
+		|  PRINT OCB E CCB NEWLINE if_stmt{ $$ = mknode("Print", NONE, 2, $3, $6); }
+		|  PRINT OCB E CCB NEWLINE Assignment1 { $$ = mknode("Print", NONE, 2, $3, $6); }
+		|  PRINT OCB E CCB NEWLINE PrintFunc { $$ = mknode("Print", NONE, 2, $3, $6); }
+		; 
 
 %%
 
