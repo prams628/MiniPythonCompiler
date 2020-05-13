@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include<ctype.h>
-#define debug 1
+#include <ctype.h>
+#define debug 0
 
 typedef struct Quadruple
 {
@@ -88,7 +88,6 @@ int deadCodeElimination()
 			aliveCode = 1;
 		else
 		{
-			printf("Here0\n");
 			if(quadArray[i].arg1 && strcmp(quadArray[i].arg1, "True") == 0)
 			{
 				strcpy(quadArray[i].arg1, "100");

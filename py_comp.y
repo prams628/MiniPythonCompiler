@@ -66,7 +66,7 @@
 	int while_loop_counter = 0;
 	int next_counter = 0;
 	stack *loop_stack = NULL;
-	struct sym_table_entry *symbol_table = NULL;
+	symTab *symbol_table = NULL;
 
 	void pInit()
 	{
@@ -106,7 +106,7 @@
 			{
 				char *tempVarString = (char*)malloc(sizeof(char) * 4);
 				sprintf(tempVarString, "T%d", temp_variable_count);
-				add_var(symbol_table, tempVarString, "0", INT);
+				symbol_table = add_var(symbol_table, tempVarString, "0", INT);
 				printf("%s = %s\n", tempVarString, tree -> token);
 				makeQuad(tempVarString, tree -> token, NULL, "=");
 				free(tempVarString);
@@ -119,7 +119,7 @@
 				temp_variable_count++;
 				char *tempVarString = (char*)malloc(sizeof(char) * 4);
 				sprintf(tempVarString, "T%d", temp_variable_count);
-				add_var(symbol_table, tempVarString, "0", INT);
+				symbol_table = add_var(symbol_table, tempVarString, "0", INT);
 				printf("%s = %s %s %s\n", tempVarString, snum, tree -> token, tree -> children[1] -> token);
 				makeQuad(tempVarString, snum, tree -> children[1] -> token, tree -> token);
 				free(tempVarString);
@@ -137,7 +137,7 @@
 				// Creating a dynamic variable to store the count of temp variables in a string
 				char *tempVarString = (char*)malloc(sizeof(char) * 4);
 				sprintf(tempVarString, "T%d", temp_variable_count++);
-				add_var(symbol_table, tempVarString, "0", INT);
+				symbol_table = add_var(symbol_table, tempVarString, "0", INT);
 
 				// Creating a dynamic variable to store the count of labels in a string
 				char *tempLabString = (char*)malloc(sizeof(char) * 4);
@@ -173,7 +173,7 @@
 				// Creating a dynamic variable to store the count of temp variables in a string
 				char *tempVarString = (char*)malloc(sizeof(char) * 4);
 				sprintf(tempVarString, "T%d", temp_variable_count++);
-				add_var(symbol_table, tempVarString, "0", INT);
+				symbol_table = add_var(symbol_table, tempVarString, "0", INT);
 				sprintf(tempLabString, "next%d", next_counter++);
 				printf("IfFalse %s goto %s:\n", tempVarString, tempLabString);
 				makeQuad(tempLabString, tempVarString, NULL, "IfFalse");
@@ -225,7 +225,7 @@
 				printf("for%d:\n", for_loop_counter++);
 
 				sprintf(tempVarString, "T%d", temp_variable_count++);
-				add_var(symbol_table, tempVarString, "0", INT);
+				symbol_table = add_var(symbol_table, tempVarString, "0", INT);
 				printf("%s = %s + %d\n", tempVarString, condition -> children[0] -> token, step_index);
 				printf("%s = %s\n",condition -> children[0] -> token, tempVarString);
 				// Add the above statements to the quad
@@ -235,7 +235,7 @@
 				
 				printf("IfFalse %s < %d goto next%d:\n", condition -> children[0] -> token, end_index, next_counter);
 				sprintf(tempVarString, "T%d", temp_variable_count++);
-				add_var(symbol_table, tempVarString, "0", INT);
+				symbol_table = add_var(symbol_table, tempVarString, "0", INT);
 				sprintf(tempLabString, "%d", end_index);	// using tempLabString to store arg2 here (to avoid creating another variable)
 				makeQuad(tempVarString, condition -> children[0] -> token, tempLabString, "<");
 				sprintf(tempLabString, "next%d", next_counter++);
@@ -345,7 +345,9 @@
  
 %%
 
-main_start: {pInit();} start  {
+main_start: {pInit(); printf("\n-----------------TOKENS-------------------\n");} start  {
+			printf("\n--------------SYMBOL TABLE----------------\n");
+			display(symbol_table);
 			printf("\n------------------AST---------------------\n");
 			printtree($2); 
 			printf("\n\n------------------ICG---------------------\n");
@@ -394,7 +396,7 @@ RangeElements :	T {$$ = mknode(",", NONE, 1, $1);;}
    ;
 
 condition : id IN RANGE OCB RangeElements CCB {
-		add_var(symbol_table, $1 -> token, "0", INT);
+		symbol_table = add_var(symbol_table, $1 -> token, "0", INT);
 		$$ = mknode("Condition", NONE, 2, $1, $5);}
 
 bool_exp : bool_term OR bool_term {$$ = mknode("Or", RELOP, 2, $1, $3);}
@@ -418,12 +420,12 @@ Assignment1: id ASS E NEWLINE	{
                             	if(int_or_str == 1)
 								{
 									$$ = mknode("=", NONE, 2, $1, $3);
-									add_var(symbol_table, $1 -> token, "0", INT);
+									symbol_table = add_var(symbol_table, $1 -> token, "0", INT);
 								}
 								else if(int_or_str == STR)
 								{
 									$$ = mknode("=", NONE, 2, $1, $3);
-									add_var(symbol_table, $1 -> token, $3 -> token, STR);
+									symbol_table = add_var(symbol_table, $1 -> token, $3 -> token, STR);
 								}
 							}
 	| error {yyerrok; yyclearin;}
@@ -483,15 +485,21 @@ T : NUM
 	| ID {
 		strcpy(temp_string, $1);
 		variable_found = 0;
+		symTab *temp = symbol_table;
+		if(DEBUG)
+			printf("Searching for %s in the symbol_table\n", temp_string);
 		for(i = 0; i < count; i++)
 		{
-			if(strcmp(symbol_table[i].name, temp_string) == 0)
+			if(DEBUG)
+				printf("%d = %s\n", i, temp -> name);
+			if(temp -> name && strcmp(temp -> name, temp_string) == 0)
 			{
-				node *temp_node;
-				$$ = mknode(symbol_table[i].name, IDENTIFIER, 0);
+				$$ = mknode(temp -> name, IDENTIFIER, 0);
 				variable_found = 1;
 				break;
 			}
+			temp = temp -> next;
+
 		}
 		if(!variable_found)
 		{
@@ -514,13 +522,11 @@ PrintFunc: PRINT OCB E CCB NEWLINE { $$ = mknode("Print", NONE, 1, $3); }
 int main(int argc, char *argv[])
 {
 	yyparse();
-	printf("-----------------Symbol table-----------------\n");
-	display(symbol_table);
    return 0;
 }
  
 int yyerror(char *s)
 {
    printf("%s at line %d\n", s, yylineno);
-   exit(1);
+   return 1;
 }
