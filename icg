@@ -21,6 +21,4 @@ next0		(null)		Label		(null)
 T6		k		=		(null)
 T7		T6		+		1
 k		T7		=		(null)
-T8		"google"		=		(null)
-k		T8		=		(null)
 (null)		k		print		(null)

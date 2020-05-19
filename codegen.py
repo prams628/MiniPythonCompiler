@@ -100,7 +100,7 @@ class CodeGen:
                 if var[1] == "1":
                     data += ".int 0"
                 else:
-                    data += ".asciz {}".format()
+                    data += ".asciz {}".format(var[1])
                 self.assembly_code.insert(1, data)
                 end = self._findEnd(var[0])
                 self.intervals[var[0]] = [start, end]
