@@ -103,7 +103,7 @@ void writeST(symTab *table)
 	// Write the code into a file titled 'icg'
 	for(int i = 0; i < count; i++)
 	{
-		sprintf(temp_str, "%s\t%s\n", temp -> name, temp -> value);
+		sprintf(temp_str, "%s\t%d\n", temp -> name, temp -> dt);
 		fwrite(temp_str, strlen(temp_str), 1, oFile);
 		temp = temp -> next;
 	}

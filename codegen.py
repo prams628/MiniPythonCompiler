@@ -16,7 +16,7 @@ class CodeGen:
         f.close()
         s.close()
 
-        #ANISH 2 regs are reserved for vars swapped in from memory
+        # 2 regs are reserved for vars swapped in from memory
         # Defined using the variable swapRegCount. Can be modified if needed.
         self.swapRegCount = 2
         self.noOfRegs = noOfRegs - self.swapRegCount
@@ -160,7 +160,7 @@ class CodeGen:
                         "STR {}, {}".format(self.regState[key], key))
                     self.regState[key] = None
 
-        #ANISH deallocate swap registers after each line (the last set of registers in )
+        # deallocate swap registers after each line (the last set of registers in )
         for key in self.swapRegState:
             if self.swapRegState[key]:
                 self.assembly_code.append("STR {}, {}".format(self.swapRegState[key], key))
@@ -201,7 +201,7 @@ class CodeGen:
                         self.regState[reg] = var
                     return reg
         
-        #ANISH if code reached here it means all registers are occupied and var has to be stored in memory
+        # if code reached here it means all registers are occupied and var has to be stored in memory
         if self.debug: print("All the main registers are full. Accessing the auxiliary ones")
         
         for reg in self.swapRegState:
@@ -274,6 +274,6 @@ class CodeGen:
 
 
 print("\n\n-----------------------------------CODE GENERATION-----------------------------------\n")
-cg = CodeGen('icg', 'st', noOfRegs=4)
+cg = CodeGen('icg', 'st', noOfRegs=10)
 cg.generate()
 cg.printAssemblyCode()
